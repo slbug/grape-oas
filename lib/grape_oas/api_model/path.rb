@@ -2,7 +2,7 @@
 
 module GrapeOAS
   module ApiModel
-    # Represents an API path (endpoint) in the IL for OpenAPI v2/v3.
+    # Represents an API path (endpoint) in the DTO model for OpenAPI v2/v3.
     # Contains a list of operations (HTTP methods) for the path.
     # Used to build the 'paths' object in both OpenAPIv2 and OpenAPIv3 documents.
     #

@@ -2,7 +2,7 @@
 
 module GrapeOAS
   module ApiModel
-    # Represents an operation parameter in the IL for OpenAPI v2/v3.
+    # Represents an operation parameter in the DTO model for OpenAPI v2/v3.
     # Used for query, path, header, and cookie parameters in both OpenAPI versions.
     #
     # @see https://swagger.io/specification/

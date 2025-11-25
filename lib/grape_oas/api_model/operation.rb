@@ -2,7 +2,7 @@
 
 module GrapeOAS
   module ApiModel
-    # Represents an API operation (endpoint action) in the IL for OpenAPI v2/v3.
+    # Represents an API operation (endpoint action) in the DTO model for OpenAPI v2/v3.
     # Encapsulates HTTP method, parameters, request body, responses, tags, and security.
     # Used as the core unit for both OpenAPIv2 and OpenAPIv3 operation objects.
     #
@@ -11,11 +11,11 @@ module GrapeOAS
     class Operation < Node
       attr_rw :http_method, :operation_id, :summary, :description,
               :deprecated, :parameters, :request_body,
-              :responses, :tag_names, :security
+              :responses, :tag_names, :security, :extensions
 
       def initialize(http_method:, operation_id: nil, summary: nil, description: nil,
                      deprecated: false, parameters: [], request_body: nil,
-                     responses: [], tag_names: [], security: [])
+                     responses: [], tag_names: [], security: [], extensions: nil)
         super()
         @http_method   = http_method.to_s.downcase
         @operation_id  = operation_id
@@ -27,6 +27,7 @@ module GrapeOAS
         @responses     = Array(responses)
         @tag_names     = Array(tag_names)
         @security      = Array(security)
+        @extensions    = extensions
       end
 
       def add_parameter(parameter)

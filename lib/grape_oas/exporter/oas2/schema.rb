@@ -17,8 +17,19 @@ module GrapeOAS
             "format" => @schema.format,
             "description" => @schema.description,
             "properties" => build_properties(@schema.properties),
-            "items" => @schema.items ? build_schema_or_ref(@schema.items) : nil
+            "items" => @schema.items ? build_schema_or_ref(@schema.items) : nil,
+            "enum" => @schema.enum
           }
+          schema_hash["minLength"] = @schema.min_length if @schema.min_length
+          schema_hash["maxLength"] = @schema.max_length if @schema.max_length
+          schema_hash["pattern"] = @schema.pattern if @schema.pattern
+          schema_hash["minimum"] = @schema.minimum if @schema.minimum
+          schema_hash["maximum"] = @schema.maximum if @schema.maximum
+          schema_hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
+          schema_hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
+          schema_hash["minItems"] = @schema.min_items if @schema.min_items
+          schema_hash["maxItems"] = @schema.max_items if @schema.max_items
+          schema_hash["example"] = @schema.examples if @schema.examples
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash.compact
         end
@@ -28,7 +39,9 @@ module GrapeOAS
         def build_properties(properties)
           return nil unless properties
 
-          properties.map { |prop| build_schema_or_ref(prop) }
+          properties.each_with_object({}) do |(name, prop_schema), h|
+            h[name] = build_schema_or_ref(prop_schema)
+          end
         end
 
         def build_schema_or_ref(schema)

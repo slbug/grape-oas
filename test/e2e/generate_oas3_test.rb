@@ -34,6 +34,9 @@ module GrapeOAS
       assert_equal "id", parameters.first["name"]
       assert_equal "path", parameters.first["in"]
       assert parameters.first["required"]
+
+      # Confirm components container exists
+      assert_kind_of Hash, schema["components"]
     end
   end
 end

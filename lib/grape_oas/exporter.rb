@@ -9,8 +9,10 @@ module GrapeOAS
       case schema_type
       when :oas2
         GrapeOAS::Exporter::OAS2Schema
-      when :oas3
-        GrapeOAS::Exporter::OAS3Schema
+      when :oas3, :oas30
+        GrapeOAS::Exporter::OAS30Schema
+      when :oas31
+        GrapeOAS::Exporter::OAS31Schema
       else
         raise ArgumentError, "Unsupported schema type: #{schema_type}"
       end

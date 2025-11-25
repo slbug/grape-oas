@@ -6,12 +6,11 @@ gemspec
 
 gem "bundler", "~> 2.0"
 
-gem "grape", case version = ENV.fetch("GRAPE_VERSION", "< 3.0")
-             when "HEAD"
-               { git: "https://github.com/ruby-grape/grape" }
-             else
-               version
-             end
+gem "grape", path: ENV.fetch("GRAPE_PATH", "../grape")
+
+gem "grape-entity"
+gem "dry-schema"
+gem "dry-validation"
 
 group :development, :test do
   gem "debug"

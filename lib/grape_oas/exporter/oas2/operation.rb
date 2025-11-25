@@ -10,7 +10,7 @@ module GrapeOAS
         end
 
         def build
-          {
+          data = {
             "operationId" => @op.operation_id,
             "summary" => @op.summary,
             "description" => @op.description,
@@ -21,6 +21,12 @@ module GrapeOAS
             "parameters" => Parameter.new(@op, @ref_tracker).build,
             "responses" => Response.new(@op.responses, @ref_tracker).build
           }.compact
+
+          data["security"] = @op.security unless @op.security.nil? || @op.security.empty?
+
+          data.merge!(@op.extensions) if @op.extensions && @op.extensions.any?
+
+          data
         end
       end
     end

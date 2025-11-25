@@ -19,8 +19,9 @@ module GrapeOAS
           "produces" => build_produces,
           "tags" => build_tags,
           "paths" => build_paths,
-          "definitions" => build_definitions
-          # TODO: Add securityDefinitions, externalDocs, parameters, responses, etc.
+          "definitions" => build_definitions,
+          "securityDefinitions" => build_security_definitions,
+          "security" => build_security
         }.compact
       end
 
@@ -34,18 +35,15 @@ module GrapeOAS
       end
 
       def build_host
-        # TODO: Derive from servers if possible
-        nil
+        @api.host
       end
 
       def build_base_path
-        # TODO: Derive from servers if possible
-        nil
+        @api.base_path
       end
 
       def build_schemes
-        # TODO: Derive from servers if possible
-        nil
+        Array(@api.schemes).presence
       end
 
       def build_consumes
@@ -92,6 +90,16 @@ module GrapeOAS
           definitions[ref_name] = OAS2::Schema.new(schema, @ref_tracker).build if schema
         end
         definitions
+      end
+
+      def build_security_definitions
+        return nil if @api.security_definitions.nil? || @api.security_definitions.empty?
+        @api.security_definitions
+      end
+
+      def build_security
+        return nil if @api.security.nil? || @api.security.empty?
+        @api.security
       end
 
       def find_schema_by_canonical_name(canonical_name)

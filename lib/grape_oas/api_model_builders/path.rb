@@ -3,7 +3,8 @@
 module GrapeOAS
   module ApiModelBuilders
     class Path
-      EXTENSION_PATTERN = /\(\.json\)$/
+      # Matches format extensions like (.json), (.:format), (.json)(.:format)
+      EXTENSION_PATTERN = /(\(\.[^)]+\))+$/
       private_constant :EXTENSION_PATTERN
 
       PATH_PARAMETER_PATTERN = %r{(?<=/):(?<param>[^/]+)}
@@ -39,7 +40,8 @@ module GrapeOAS
       private
 
       def skip_route?(route)
-        route.settings.dig(:swagger, :hidden)
+        # Check both options and settings for backward compatibility
+        route.options.dig(:swagger, :hidden) || route.settings.dig(:swagger, :hidden)
       end
 
       def build_operation(route)

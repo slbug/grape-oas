@@ -4,9 +4,9 @@ require "securerandom"
 
 module GrapeOAS
   module ApiModel
-    # Base class for all Intermediate Language (IL) nodes used in OpenAPI v2/v3 conversion.
+    # Base class for all DTO (intermediate) nodes used in OpenAPI v2/v3 conversion.
     # Provides a unique ID and helper methods for referencing and bucketing.
-    # All IL classes for OpenAPIv2 and OpenAPIv3 inherit from Node.
+    # All DTO classes for OpenAPIv2 and OpenAPIv3 inherit from Node.
     #
     # @abstract
     # @see GrapeOAS::ApiModel::Schema, GrapeOAS::ApiModel::Parameter, etc.

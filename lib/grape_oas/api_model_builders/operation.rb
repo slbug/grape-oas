@@ -16,15 +16,16 @@ module GrapeOAS
           operation_id: operation_id,
           summary: route.options[:description],
           tag_names: tag_names,
+          extensions: operation_extensions,
         )
 
         api.add_tags(*tag_names) if tag_names.any?
 
         build_request(operation)
 
-        operation.add_response(
-          build_response,
-        )
+        build_responses.each { |resp| operation.add_response(resp) }
+
+        operation.security = build_security if build_security
 
         operation
       end
@@ -56,6 +57,23 @@ module GrapeOAS
         GrapeOAS::ApiModelBuilders::Response
           .new(api: api, route: route)
           .build
+      end
+
+      def build_responses
+        Array(build_response)
+      end
+
+      def build_security
+        route.options.dig(:documentation, :security) ||
+          route.options[:security] ||
+          route.options[:auth]
+      end
+
+      def operation_extensions
+        doc = route.options[:documentation]
+        return nil unless doc.is_a?(Hash)
+        ext = doc.select { |k, _| k.to_s.start_with?("x-") }
+        ext unless ext.empty?
       end
 
       def build_request(operation)

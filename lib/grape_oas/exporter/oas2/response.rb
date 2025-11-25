@@ -14,9 +14,12 @@ module GrapeOAS
           Array(@responses).each do |resp|
             res[resp.http_status] = {
               "description" => resp.description,
-              "schema" => build_response_schema(resp)
-              # TODO: Add headers
+              "schema" => build_response_schema(resp),
+              "headers" => build_headers(resp.headers),
+              "examples" => build_examples(resp.media_types)
             }.compact
+            res[resp.http_status].merge!(resp.extensions) if resp.extensions
+            res[resp.http_status]["examples"] = resp.examples if resp.examples
           end
           res
         end
@@ -36,6 +39,22 @@ module GrapeOAS
           else
             Schema.new(schema, @ref_tracker).build
           end
+        end
+
+        def build_headers(headers)
+          return nil unless headers && !headers.empty?
+          headers.each_with_object({}) do |hdr, h|
+            name = hdr[:name] || hdr["name"] || hdr[:key] || hdr["key"]
+            next unless name
+            h[name] = hdr[:schema] || hdr["schema"] || { "type" => "string" }
+          end
+        end
+
+        def build_examples(media_types)
+          return nil unless media_types
+          mt = Array(media_types).first
+          return nil unless mt&.examples
+          mt.examples.is_a?(Hash) ? mt.examples : { mt.mime_type => mt.examples }
         end
       end
     end
