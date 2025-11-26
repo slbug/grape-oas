@@ -11,11 +11,13 @@ module GrapeOAS
     class Operation < Node
       attr_rw :http_method, :operation_id, :summary, :description,
               :deprecated, :parameters, :request_body,
-              :responses, :tag_names, :security, :extensions
+              :responses, :tag_names, :security, :extensions,
+              :consumes, :produces
 
       def initialize(http_method:, operation_id: nil, summary: nil, description: nil,
                      deprecated: false, parameters: [], request_body: nil,
-                     responses: [], tag_names: [], security: [], extensions: nil)
+                     responses: [], tag_names: [], security: [], extensions: nil,
+                     consumes: [], produces: [])
         super()
         @http_method   = http_method.to_s.downcase
         @operation_id  = operation_id
@@ -28,6 +30,8 @@ module GrapeOAS
         @tag_names     = Array(tag_names)
         @security      = Array(security)
         @extensions    = extensions
+        @consumes      = Array(consumes)
+        @produces      = Array(produces)
       end
 
       def add_parameter(parameter)

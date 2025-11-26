@@ -11,11 +11,19 @@ module GrapeOAS
         # OAS2-specific fields: consumes, produces, parameters (including body)
         def build_version_specific_fields
           {
-            "consumes" => ["application/json"],
-            "produces" => ["application/json"],
+            "consumes" => consumes,
+            "produces" => produces,
             "parameters" => Parameter.new(@op, @ref_tracker).build,
             "responses" => Response.new(@op.responses, @ref_tracker).build
           }
+        end
+
+        def consumes
+          Array(@op.consumes.presence || ["application/json"])
+        end
+
+        def produces
+          Array(@op.produces.presence || ["application/json"])
         end
       end
     end

@@ -17,6 +17,8 @@ module GrapeOAS
           summary: route.options[:description],
           tag_names: tag_names,
           extensions: operation_extensions,
+          consumes: consumes,
+          produces: produces,
         )
 
         api.add_tags(*tag_names) if tag_names.any?
@@ -67,6 +69,50 @@ module GrapeOAS
         route.options.dig(:documentation, :security) ||
           route.options[:security] ||
           route.options[:auth]
+      end
+
+      def consumes
+        route_content_types
+      end
+
+      def produces
+        route_content_types
+      end
+
+      def route_content_types
+        ct = route.settings[:content_types] || route.settings[:content_type] if route.respond_to?(:settings)
+        ct ||= route.options[:content_types] || route.options[:content_type]
+
+        mimes = if ct.is_a?(Hash)
+                  ct.values
+                elsif ct.respond_to?(:to_a)
+                  ct.to_a
+                else
+                  []
+                end
+
+        default_format = route.settings[:default_format] if route.respond_to?(:settings)
+        default_format ||= route.options[:format]
+        mimes << mime_for_format(default_format) if mimes.empty? && default_format
+
+        mimes = mimes.map { |m| normalize_mime(m) }.compact
+        mimes.empty? ? ["application/json"] : mimes.uniq
+      end
+
+      def mime_for_format(fmt)
+        return if fmt.nil?
+        return fmt if fmt.to_s.include?("/")
+
+        return unless defined?(Grape::ContentTypes::CONTENT_TYPES)
+
+        Grape::ContentTypes::CONTENT_TYPES[fmt.to_sym]
+      end
+
+      def normalize_mime(mime)
+        return nil if mime.nil?
+        return mime if mime.to_s.include?("/")
+
+        mime_for_format(mime)
       end
 
       def operation_extensions

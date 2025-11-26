@@ -47,14 +47,16 @@ module GrapeOAS
           body_schema.canonical_name = "#{operation.operation_id}_Request"
         end
 
-        media_type = GrapeOAS::ApiModel::MediaType.new(
-          mime_type: "application/json",
-          schema: body_schema,
-          extensions: media_ext,
-        )
+        media_types = Array(operation.consumes.presence || ["application/json"]).map do |mime|
+          GrapeOAS::ApiModel::MediaType.new(
+            mime_type: mime,
+            schema: body_schema,
+            extensions: media_ext,
+          )
+        end
         operation.request_body = GrapeOAS::ApiModel::RequestBody.new(
           required: body_schema.required && !body_schema.required.empty?,
-          media_types: [media_type],
+          media_types: media_types,
           extensions: request_body_extensions,
         )
       end
