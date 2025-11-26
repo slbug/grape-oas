@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "response_parsers/documentation_responses_parser"
+require_relative "response_parsers/http_codes_parser"
+require_relative "response_parsers/default_response_parser"
+
 module GrapeOAS
   module ApiModelBuilders
     class Response
@@ -16,106 +20,23 @@ module GrapeOAS
 
       private
 
+      # Use Strategy pattern to parse responses
+      # Parsers are tried in order of priority
       def response_specs
-        specs = []
-
-        specs.concat(extract_http_codes(route.options[:http_codes])) if route.options[:http_codes]
-        specs.concat(extract_http_codes(route.options[:failure])) if route.options[:failure]
-        specs.concat(extract_http_codes(route.options[:success])) if route.options[:success]
-        specs.concat(extract_doc_responses) if route.options.dig(:documentation, :responses)
-
-        if specs.empty?
-          specs << {
-            code: default_status_code,
-            message: "Success",
-            entity: route.options[:entity],
-            headers: nil
-          }
-        end
-
-        specs
+        parser = parsers.find { |p| p.applicable?(route) }
+        parser ? parser.parse(route) : []
       end
 
-      def extract_doc_responses
-        doc_resps = route.options.dig(:documentation, :responses)
-        return [] unless doc_resps.is_a?(Hash)
-
-        doc_resps.map do |code, doc|
-          doc = normalize_hash_keys(doc)
-          {
-            code: code,
-            message: extract_description(doc),
-            headers: doc[:headers],
-            entity: extract_entity(doc),
-            extensions: doc.select { |k, _| k.to_s.start_with?("x-") },
-            examples: doc[:examples]
-          }
-        end
-      end
-
-      def extract_http_codes(value)
-        return [] unless value
-
-        items = value.is_a?(Hash) ? [value] : Array(value)
-
-        items.map do |entry|
-          normalize_response_entry(entry)
-        end
-      end
-
-      # Normalize a single response entry from various formats
-      def normalize_response_entry(entry)
-        case entry
-        when Hash
-          {
-            code: extract_status_code(entry),
-            message: extract_description(entry),
-            entity: extract_entity(entry),
-            headers: entry[:headers]
-          }
-        when Array
-          code, message, entity = entry
-          {
-            code: code,
-            message: message,
-            entity: entity || route.options[:entity],
-            headers: nil
-          }
-        else
-          # Plain status code (e.g., 404)
-          {
-            code: entry,
-            message: nil,
-            entity: route.options[:entity],
-            headers: nil
-          }
-        end
-      end
-
-      # Extract status code from hash, supporting multiple key names
-      def extract_status_code(hash)
-        hash[:code] || hash[:status] || hash[:http_status] || default_status_code
-      end
-
-      # Extract description from hash, supporting multiple key names
-      def extract_description(hash)
-        hash[:message] || hash[:description] || hash[:desc]
-      end
-
-      # Extract entity from hash, supporting multiple key names
-      def extract_entity(hash)
-        hash[:model] || hash[:entity] || route.options[:entity]
-      end
-
-      # Normalize hash keys (string -> symbol)
-      def normalize_hash_keys(hash)
-        return hash unless hash.is_a?(Hash)
-
-        hash.transform_keys { |k| k.is_a?(String) ? k.to_sym : k }
-      end
-
-      def default_status_code
-        (route.options[:default_status] || 200).to_s
+      # Response parsers in priority order
+      # DocumentationResponsesParser has highest priority (most comprehensive)
+      # HttpCodesParser handles legacy grape-swagger formats
+      # DefaultResponseParser is the fallback
+      def parsers
+        @parsers ||= [
+          ResponseParsers::DocumentationResponsesParser.new,
+          ResponseParsers::HttpCodesParser.new,
+          ResponseParsers::DefaultResponseParser.new
+        ]
       end
 
       def build_response_from_spec(spec)
@@ -161,7 +82,7 @@ module GrapeOAS
           name: name,
           schema: {
             "type" => header_spec[:type] || header_spec["type"] || "string",
-            "description" => extract_description(header_spec)
+            "description" => header_spec[:description] || header_spec[:desc]
           }.compact
         }
       end
