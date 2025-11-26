@@ -10,11 +10,12 @@ module GrapeOAS
       PATH_PARAMETER_PATTERN = %r{(?<=/):(?<param>[^/]+)}
       private_constant :PATH_PARAMETER_PATTERN
 
-      attr_reader :api, :routes
+      attr_reader :api, :routes, :app
 
-      def initialize(api:, routes:)
+      def initialize(api:, routes:, app: nil)
         @api = api
         @routes = routes
+        @app = app
       end
 
       def build
@@ -46,7 +47,7 @@ module GrapeOAS
 
       def build_operation(route)
         GrapeOAS::ApiModelBuilders::Operation
-          .new(api: api, route: route)
+          .new(api: api, route: route, app: app)
           .build
       end
 

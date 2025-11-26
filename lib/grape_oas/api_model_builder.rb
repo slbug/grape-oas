@@ -23,7 +23,7 @@ module GrapeOAS
 
     def add_app(app)
       GrapeOAS::ApiModelBuilders::Path
-        .new(api: @api, routes: app.routes)
+        .new(api: @api, routes: app.routes, app: app)
         .build
     end
 

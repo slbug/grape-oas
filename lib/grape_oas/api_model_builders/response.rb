@@ -3,11 +3,12 @@
 module GrapeOAS
   module ApiModelBuilders
     class Response
-      attr_reader :api, :route
+      attr_reader :api, :route, :app
 
-      def initialize(api:, route:)
+      def initialize(api:, route:, app: nil)
         @api = api
         @route = route
+        @app = app
       end
 
       def build
@@ -103,6 +104,7 @@ module GrapeOAS
       def response_content_types
         content_types = route.settings[:content_types] || route.settings[:content_type] if route.respond_to?(:settings)
         content_types ||= route.options[:content_types] || route.options[:content_type]
+        content_types ||= api_content_types
 
         mimes = if content_types.is_a?(Hash)
                   content_types.values
@@ -114,6 +116,7 @@ module GrapeOAS
 
         default_format = route.settings[:default_format] if route.respond_to?(:settings)
         default_format ||= route.options[:format]
+        default_format ||= api_default_format
         mimes << mime_for_format(default_format) if mimes.empty? && default_format
 
         mimes = mimes.map { |m| normalize_mime(m) }.compact
@@ -134,6 +137,24 @@ module GrapeOAS
         return mime_or_format if mime_or_format.to_s.include?("/")
 
         mime_for_format(mime_or_format)
+      end
+
+      def api_content_types
+        return api.content_types if api.respond_to?(:content_types)
+        return app.content_types if app.respond_to?(:content_types)
+
+        api.settings[:content_types] if api.respond_to?(:settings) && api.settings[:content_types]
+      rescue StandardError
+        nil
+      end
+
+      def api_default_format
+        return api.default_format if api.respond_to?(:default_format)
+        return app.default_format if app.respond_to?(:default_format)
+
+        api.settings[:default_format] if api.respond_to?(:settings) && api.settings[:default_format]
+      rescue StandardError
+        nil
       end
     end
   end
