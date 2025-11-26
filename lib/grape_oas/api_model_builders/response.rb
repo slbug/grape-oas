@@ -101,13 +101,13 @@ module GrapeOAS
       end
 
       def response_content_types
-        ct = route.settings[:content_types] || route.settings[:content_type] if route.respond_to?(:settings)
-        ct ||= route.options[:content_types] || route.options[:content_type]
+        content_types = route.settings[:content_types] || route.settings[:content_type] if route.respond_to?(:settings)
+        content_types ||= route.options[:content_types] || route.options[:content_type]
 
-        mimes = if ct.is_a?(Hash)
-                  ct.values
-                elsif ct.respond_to?(:to_a)
-                  ct.to_a
+        mimes = if content_types.is_a?(Hash)
+                  content_types.values
+                elsif content_types.respond_to?(:to_a)
+                  content_types.to_a
                 else
                   []
                 end
