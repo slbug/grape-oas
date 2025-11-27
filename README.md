@@ -56,6 +56,8 @@ Notes for OpenAPI 3.1 users
 - `documentation[:nullable]` on params marks the schema as `type: [..,"null"]`.
 - `documentation[:additional_properties]` and `documentation[:unevaluated_properties]` are emitted for 3.1 only.
 - `documentation[:defs]` or `[:$defs]` are passed through to `$defs` in 3.1 output.
+- Operations without an explicit `summary` will fall back to the first sentence of `description`, and if that’s missing a humanized `operationId` is used so linters stay happy.
+- For 3.0 specs we emit `example` (single value); for 3.1 specs we emit `examples` (array). Primitive examples are coerced to the declared type to avoid lint errors.
 
 ## Development
 
