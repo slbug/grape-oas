@@ -40,9 +40,13 @@ module GrapeOAS
       end
 
       def build_servers
-        Array(@api.servers).map do |srv|
+        servers = Array(@api.servers).map do |srv|
           srv.is_a?(Hash) ? srv : { "url" => srv.to_s }
-        end.then { |arr| arr.empty? ? nil : arr }
+        end
+
+        servers = [{ "url" => "http://localhost" }] if servers.empty?
+
+        servers
       end
 
       def build_tags
@@ -112,9 +116,9 @@ module GrapeOAS
       end
 
       def build_security
-        return nil if @api.security.nil? || @api.security.empty?
+        return @api.security unless @api.security.nil? || @api.security.empty?
 
-        @api.security
+        []
       end
 
       def nullable_keyword?

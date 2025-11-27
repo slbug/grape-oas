@@ -6,6 +6,10 @@ module GrapeOAS
       # OAS3.1-specific Schema exporter
       # Differs from OAS3 by preferring `examples` over deprecated `example`.
       class Schema < OAS3::Schema
+        def openapi_version
+          "3.1.0"
+        end
+
         private
 
         def build

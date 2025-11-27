@@ -22,11 +22,7 @@ module GrapeOAS
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
-          if respond_to?(:openapi_version) && openapi_version == "3.1.0"
-            schema_hash["examples"] = @schema.examples if @schema.examples
-          elsif @schema.examples
-            schema_hash["example"] = @schema.examples
-          end
+          schema_hash["examples"] = @schema.examples if @schema.examples
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != "object"
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?

@@ -21,6 +21,9 @@ module GrapeOAS
           # Add security if present
           data["security"] = @op.security unless @op.security.nil? || @op.security.empty?
 
+          # Guarantee a 4xx response for lint rules
+          ensure_default_error_response(data)
+
           # Merge extensions
           data.merge!(@op.extensions) if @op.extensions&.any?
 
@@ -31,9 +34,12 @@ module GrapeOAS
 
         # Common fields present in both OAS2 and OAS3
         def build_common_fields
+          summary = @op.summary
+          summary ||= @op.description&.split(/\.\s/)&.first&.strip
+
           {
             "operationId" => @op.operation_id,
-            "summary" => @op.summary,
+            "summary" => summary,
             "description" => @op.description,
             "deprecated" => @op.deprecated,
             "tags" => @op.tag_names
@@ -44,6 +50,21 @@ module GrapeOAS
         # @return [Hash] Version-specific fields (e.g., consumes/produces for OAS2, requestBody for OAS3)
         def build_version_specific_fields
           raise NotImplementedError, "#{self.class} must implement #build_version_specific_fields"
+        end
+
+        # Ensure there is at least one 4xx response when any responses exist
+        def ensure_default_error_response(data)
+          responses = data["responses"]
+          return data unless responses && !responses.empty?
+
+          has_4xx = responses.keys.any? { |code| code.to_s.start_with?("4") }
+          return data if has_4xx
+
+          responses["400"] = {
+            "description" => "Bad Request"
+          }
+
+          data
         end
       end
     end
