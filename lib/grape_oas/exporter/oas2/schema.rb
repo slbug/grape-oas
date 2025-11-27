@@ -15,9 +15,9 @@ module GrapeOAS
           schema_hash = {
             "type" => @schema.type,
             "format" => @schema.format,
-            "description" => @schema.description,
+            "description" => @schema.description&.to_s,
             "properties" => build_properties(@schema.properties),
-            "items" => @schema.items ? build_schema_or_ref(@schema.items) : nil,
+            "items" => (@schema.items ? build_schema_or_ref(@schema.items) : nil),
             "enum" => normalize_enum(@schema.enum, @schema.type)
           }
           schema_hash.delete("properties") if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != "object"

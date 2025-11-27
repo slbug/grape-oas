@@ -27,6 +27,7 @@ module GrapeOAS
         build_request(operation)
 
         build_responses.each { |resp| operation.add_response(resp) }
+        ensure_path_parameters(operation)
 
         operation.security = build_security if build_security
 
@@ -168,6 +169,28 @@ module GrapeOAS
         GrapeOAS::ApiModelBuilders::Request
           .new(api: api, route: route, operation: operation)
           .build
+      end
+
+      # Ensure every {param} in the path template has a corresponding path parameter.
+      def ensure_path_parameters(operation)
+        template = sanitize_route_path(route.path)
+        placeholders = template.scan(/\{([^}]+)\}/).flatten
+        existing = Array(operation.parameters).select { |p| p.location == "path" }.map(&:name)
+        missing = placeholders - existing
+        missing.each do |name|
+          operation.add_parameter(
+            GrapeOAS::ApiModel::Parameter.new(
+              location: "path",
+              name: name,
+              required: true,
+              schema: GrapeOAS::ApiModel::Schema.new(type: "string"),
+            ),
+          )
+        end
+      end
+
+      def sanitize_route_path(path)
+        path.gsub(Path::EXTENSION_PATTERN, "").gsub(Path::PATH_PARAMETER_PATTERN, "{\\k<param>}")
       end
     end
   end

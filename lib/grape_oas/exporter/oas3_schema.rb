@@ -27,6 +27,11 @@ module GrapeOAS
         "3.0.0"
       end
 
+      # Allow subclasses (e.g., OAS31Schema) to override
+      def schema_builder
+        OAS3::Schema
+      end
+
       def build_info
         {
           "title" => @api.title,

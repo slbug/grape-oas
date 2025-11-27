@@ -9,6 +9,10 @@ module GrapeOAS
         "3.1.0"
       end
 
+      def schema_builder
+        OAS31::Schema
+      end
+
       def nullable_keyword?
         false
       end

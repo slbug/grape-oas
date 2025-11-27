@@ -16,13 +16,17 @@ module GrapeOAS
           schema_hash = {}
           schema_hash["type"] = nullable_type
           schema_hash["format"] = @schema.format
-          schema_hash["description"] = @schema.description
+          schema_hash["description"] = @schema.description.to_s if @schema.description
           props = build_properties(@schema.properties)
           schema_hash["properties"] = props if props
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
-          schema_hash["example"] = @schema.examples if @schema.examples
+          if respond_to?(:openapi_version) && openapi_version == "3.1.0"
+            schema_hash["examples"] = @schema.examples if @schema.examples
+          elsif @schema.examples
+            schema_hash["example"] = @schema.examples
+          end
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != "object"
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
@@ -74,7 +78,7 @@ module GrapeOAS
         end
 
         def normalize_enum(enum_vals, type)
-          return unless enum_vals.is_a?(Array)
+          return nil unless enum_vals.is_a?(Array)
 
           coerced = enum_vals.map do |v|
             case type
@@ -84,7 +88,10 @@ module GrapeOAS
             end
           end.compact
 
-          coerced.uniq
+          result = coerced.uniq
+          return nil if result.empty?
+
+          result
         end
 
         def apply_numeric_constraints(hash)

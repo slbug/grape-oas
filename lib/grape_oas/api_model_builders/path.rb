@@ -56,6 +56,9 @@ module GrapeOAS
           .gsub(EXTENSION_PATTERN, "") # Remove format extensions like (.json)
           .gsub(PATH_PARAMETER_PATTERN, "{\\k<param>}") # Replace named parameters with curly braces
       end
+
+      public_constant :EXTENSION_PATTERN
+      public_constant :PATH_PARAMETER_PATTERN
     end
   end
 end
