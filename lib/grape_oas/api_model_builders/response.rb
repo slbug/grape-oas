@@ -5,6 +5,28 @@ module GrapeOAS
     class Response
       include Concerns::ContentTypeResolver
 
+      # Default response parsers in priority order
+      # DocumentationResponsesParser has highest priority (most comprehensive)
+      # HttpCodesParser handles legacy grape-swagger formats
+      # DefaultResponseParser is the fallback
+      DEFAULT_PARSERS = [
+        ResponseParsers::DocumentationResponsesParser,
+        ResponseParsers::HttpCodesParser,
+        ResponseParsers::DefaultResponseParser
+      ].freeze
+
+      class << self
+        attr_writer :parsers
+
+        def parsers
+          @parsers ||= DEFAULT_PARSERS.dup
+        end
+
+        def reset_parsers!
+          @parsers = DEFAULT_PARSERS.dup
+        end
+      end
+
       attr_reader :api, :route, :app
 
       def initialize(api:, route:, app: nil)
@@ -26,16 +48,8 @@ module GrapeOAS
         parser ? parser.parse(route) : []
       end
 
-      # Response parsers in priority order
-      # DocumentationResponsesParser has highest priority (most comprehensive)
-      # HttpCodesParser handles legacy grape-swagger formats
-      # DefaultResponseParser is the fallback
       def parsers
-        @parsers ||= [
-          ResponseParsers::DocumentationResponsesParser.new,
-          ResponseParsers::HttpCodesParser.new,
-          ResponseParsers::DefaultResponseParser.new
-        ]
+        @parsers ||= self.class.parsers.map(&:new)
       end
 
       def build_response_from_spec(spec)
