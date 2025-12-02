@@ -45,6 +45,13 @@ module GrapeOAS
         expose :extras, using: DetailEntity, documentation: { is_array: true, type: DetailEntity }
       end
 
+      # === Test Entity for Array class type ===
+      class ArrayTypeEntity < Grape::Entity
+        expose :tags, documentation: { type: Array }
+        expose :numbers, documentation: { type: Array }
+        expose :count, documentation: { type: Integer }
+      end
+
       # === Basic property and reference tests ===
 
       def test_builds_properties_and_refs
@@ -125,6 +132,25 @@ module GrapeOAS
 
         assert_equal "array", extras.type
         assert_equal %w[a b], extras.items.properties.keys.sort
+      end
+
+      # === Array class type tests ===
+
+      def test_array_class_type_has_items
+        # This tests the fix for the case/when bug where Array === Array returned false
+        schema = Introspectors::EntityIntrospector.new(ArrayTypeEntity).build_schema
+
+        tags = schema.properties["tags"]
+
+        assert_equal "array", tags.type
+        refute_nil tags.items, "Array type should have items schema"
+        assert_equal "string", tags.items.type
+
+        numbers = schema.properties["numbers"]
+
+        assert_equal "array", numbers.type
+        refute_nil numbers.items, "Array type should have items schema"
+        assert_equal "string", numbers.items.type
       end
     end
   end
