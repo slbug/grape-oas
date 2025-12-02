@@ -135,29 +135,45 @@ module GrapeOAS
       end
 
       def find_schema_by_canonical_name(canonical_name)
-        return @ref_schemas[canonical_name] if @ref_schemas.key?(canonical_name)
+        @ref_schemas[canonical_name] || schema_index[canonical_name]
+      end
 
+      def schema_index
+        @schema_index ||= build_schema_index
+      end
+
+      def build_schema_index
+        index = {}
         @api.paths.each do |path|
           path.operations.each do |op|
-            Array(op.parameters).each do |param|
-              schema = param.schema
-              return schema if schema.respond_to?(:canonical_name) && schema.canonical_name == canonical_name
-            end
-            if op.request_body
-              Array(op.request_body.media_types).each do |mt|
-                schema = mt.schema
-                return schema if schema.respond_to?(:canonical_name) && schema.canonical_name == canonical_name
-              end
-            end
-            Array(op.responses).each do |resp|
-              Array(resp.media_types).each do |mt|
-                schema = mt.schema
-                return schema if schema.respond_to?(:canonical_name) && schema.canonical_name == canonical_name
-              end
-            end
+            collect_schemas_from_operation(op, index)
           end
         end
-        nil
+        index
+      end
+
+      def collect_schemas_from_operation(operation, index)
+        Array(operation.parameters).each do |param|
+          index_schema(param.schema, index)
+        end
+
+        if operation.request_body
+          Array(operation.request_body.media_types).each do |media_type|
+            index_schema(media_type.schema, index)
+          end
+        end
+
+        Array(operation.responses).each do |resp|
+          Array(resp.media_types).each do |media_type|
+            index_schema(media_type.schema, index)
+          end
+        end
+      end
+
+      def index_schema(schema, index)
+        return unless schema.respond_to?(:canonical_name) && schema.canonical_name
+
+        index[schema.canonical_name] ||= schema
       end
 
       def collect_refs(schema, pending, seen = Set.new)
