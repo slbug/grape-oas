@@ -21,6 +21,12 @@ module GrapeOAS
         def next_id
           self.id_counter += 1
         end
+
+        # Returns the pluralized bucket name for this class (e.g., "schemas", "parameters").
+        # Memoized at the class level to avoid repeated string manipulation.
+        def bucket
+          @bucket ||= "#{name.split("::").last.downcase}s"
+        end
       end
 
       attr_reader :id
@@ -31,10 +37,6 @@ module GrapeOAS
 
       def ref
         "#/components/#{self.class.bucket}/#{id}"
-      end
-
-      def self.bucket
-        "#{name.split("::").last.downcase}s"
       end
 
       private
