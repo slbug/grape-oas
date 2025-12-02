@@ -205,9 +205,7 @@ module GrapeOAS
 
         return schema unless unwrapped.respond_to?(:keys)
 
-        # rubocop:disable Style/HashEachMethods -- Dry::Types::Schema#keys returns array, not hash
-        unwrapped.keys.each do |key|
-          # rubocop:enable Style/HashEachMethods
+        extract_schema_keys(unwrapped).each do |key|
           key_name = key.respond_to?(:name) ? key.name.to_s : key.to_s
           key_type = key.respond_to?(:type) ? key.type : nil
 
@@ -217,6 +215,11 @@ module GrapeOAS
         end
 
         schema
+      end
+
+      # Extract keys array from Dry::Types::Schema (returns array, not hash)
+      def extract_schema_keys(schema)
+        schema.keys
       end
 
       def build_base_schema(primitive, member)

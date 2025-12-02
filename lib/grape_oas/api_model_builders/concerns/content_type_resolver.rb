@@ -58,7 +58,7 @@ module GrapeOAS
 
         def default_format_from_app_or_api
           return api.default_format if api.respond_to?(:default_format)
-          return app.default_format if app&.respond_to?(:default_format) # rubocop:disable Lint/RedundantSafeNavigation
+          return app.default_format if app_responds_to?(:default_format)
 
           api.settings[:default_format] if api.respond_to?(:settings) && api.settings[:default_format]
         rescue NoMethodError
@@ -68,7 +68,7 @@ module GrapeOAS
         def content_types_from_app_or_api(default_format)
           source = if api.respond_to?(:content_types)
                      api.content_types
-                   elsif app&.respond_to?(:content_types) # rubocop:disable Lint/RedundantSafeNavigation
+                   elsif app_responds_to?(:content_types)
                      app.content_types
                    elsif api.respond_to?(:settings)
                      api.settings[:content_types]
@@ -82,6 +82,10 @@ module GrapeOAS
           filtered.empty? ? source : filtered
         rescue NoMethodError
           nil
+        end
+
+        def app_responds_to?(method)
+          !app.nil? && app.respond_to?(method)
         end
       end
     end
