@@ -8,6 +8,7 @@ module GrapeOAS
       # This module converts them back to proper nested schemas.
       module NestedParamsBuilder
         BRACKET_PATTERN = /\[([^\]]+)\]/
+        MAX_NESTING_DEPTH = 10
 
         # Builds a nested schema from flat bracket-notation params.
         # @param flat_params [Hash] The flat params from Grape route (name => spec)
@@ -33,7 +34,7 @@ module GrapeOAS
             if nested_groups.key?(name)
               # It's a container (Hash or Array) with children
               nested_children = nested_groups[name]
-              child_schema = build_nested_children(spec, nested_children)
+              child_schema = build_nested_children(spec, nested_children, depth: 0)
             end
 
             required = spec[:required] || false
@@ -90,13 +91,16 @@ module GrapeOAS
         end
 
         # Builds nested children schema recursively.
-        def build_nested_children(parent_spec, nested_children)
+        # @raise [ArgumentError] if nesting exceeds MAX_NESTING_DEPTH
+        def build_nested_children(parent_spec, nested_children, depth: 0)
+          raise ArgumentError, "Parameter nesting too deep (max #{MAX_NESTING_DEPTH} levels)" if depth > MAX_NESTING_DEPTH
+
           parent_type = parent_spec[:type]
 
           if array_type?(parent_type)
-            build_array_with_children(parent_spec, nested_children)
+            build_array_with_children(parent_spec, nested_children, depth: depth)
           else
-            build_hash_with_children(parent_spec, nested_children)
+            build_hash_with_children(parent_spec, nested_children, depth: depth)
           end
         end
 
@@ -106,8 +110,8 @@ module GrapeOAS
         end
 
         # Builds an array schema with nested item properties.
-        def build_array_with_children(parent_spec, nested_children)
-          items_schema = build_hash_with_children(parent_spec, nested_children)
+        def build_array_with_children(parent_spec, nested_children, depth: 0)
+          items_schema = build_hash_with_children(parent_spec, nested_children, depth: depth)
           ApiModel::Schema.new(
             type: Constants::SchemaTypes::ARRAY,
             items: items_schema,
@@ -115,13 +119,17 @@ module GrapeOAS
         end
 
         # Builds a hash/object schema with nested properties.
-        def build_hash_with_children(parent_spec, nested_children)
+        def build_hash_with_children(parent_spec, nested_children, depth: 0)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           top_level, deeply_nested = partition_params(nested_children)
           nested_groups = group_nested_params(deeply_nested)
 
           top_level.each do |name, spec|
-            child_schema = nested_groups.key?(name) ? build_nested_children(spec, nested_groups[name]) : build_schema_for_spec(spec)
+            child_schema = if nested_groups.key?(name)
+                             build_nested_children(spec, nested_groups[name], depth: depth + 1)
+                           else
+                             build_schema_for_spec(spec)
+                           end
             schema.add_property(name, child_schema, required: spec[:required] || false)
           end
 
@@ -132,37 +140,21 @@ module GrapeOAS
         def apply_documentation_extensions(schema, parent_spec)
           doc = parent_spec[:documentation] || {}
           schema.description = doc[:desc] if doc[:desc]
-
-          # Apply additional_properties
-          if doc.key?(:additional_properties) && schema.respond_to?(:additional_properties=)
-            schema.additional_properties = doc[:additional_properties]
-          end
-
-          # Apply unevaluated_properties
-          if doc.key?(:unevaluated_properties) && schema.respond_to?(:unevaluated_properties=)
-            schema.unevaluated_properties = doc[:unevaluated_properties]
-          end
-
-          # Apply format
-          schema.format = doc[:format] if doc[:format] && schema.respond_to?(:format=)
-
-          # Apply example
-          schema.examples = doc[:example] if doc[:example] && schema.respond_to?(:examples=)
+          schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
+          schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
+          schema.format = doc[:format] if doc[:format]
+          schema.examples = doc[:example] if doc[:example]
         end
 
         # Checks if a param is explicitly marked as NOT a body param (e.g., query, header).
         def explicit_non_body_param?(spec)
-          doc = spec[:documentation] || {}
-          param_type = doc[:param_type]&.to_s&.downcase
+          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
           param_type && %w[query header path].include?(param_type)
         end
 
         # Checks if a param should be in the body.
         def body_param?(spec)
-          doc = spec[:documentation] || {}
-          doc[:param_type] == "body" ||
-            spec[:type].to_s == "Hash" ||
-            spec[:type] == Hash
+          spec.dig(:documentation, :param_type) == "body" || [Hash, "Hash"].include?(spec[:type])
         end
       end
     end
