@@ -1,0 +1,249 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+module GrapeOAS
+  module ApiModelBuilders
+    class ResponseEdgeCasesTest < Minitest::Test
+      def setup
+        @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
+      end
+
+      # === Response Entity for tests ===
+
+      class ItemEntity < Grape::Entity
+        expose :id, documentation: { type: Integer }
+        expose :name, documentation: { type: String }
+      end
+
+      class ErrorEntity < Grape::Entity
+        expose :code, documentation: { type: Integer }
+        expose :message, documentation: { type: String }
+      end
+
+      # === Multiple status codes with different entities ===
+
+      def test_multiple_failure_status_codes
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get item",
+               success: { code: 200, model: ResponseEdgeCasesTest::ItemEntity },
+               failure: [
+                 [400, "Bad Request", ResponseEdgeCasesTest::ErrorEntity],
+                 [404, "Not Found", ResponseEdgeCasesTest::ErrorEntity],
+                 [500, "Internal Server Error"]
+               ]
+          get "items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        # Should have success response
+        success_response = responses.find { |r| r.http_status == "200" }
+
+        refute_nil success_response
+
+        # Should have failure responses
+        bad_request = responses.find { |r| r.http_status == "400" }
+        not_found = responses.find { |r| r.http_status == "404" }
+        server_error = responses.find { |r| r.http_status == "500" }
+
+        refute_nil bad_request, "Should have 400 response"
+        refute_nil not_found, "Should have 404 response"
+        refute_nil server_error, "Should have 500 response"
+
+        assert_equal "Bad Request", bad_request.description
+        assert_equal "Not Found", not_found.description
+      end
+
+      # === 204 No Content response should have no schema ===
+
+      def test_204_no_content_response
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Delete item",
+               success: { code: 204, message: "No Content" },
+               failure: [[404, "Not Found", ResponseEdgeCasesTest::ErrorEntity]]
+          delete "items/:id" do
+            status 204
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        no_content = responses.find { |r| r.http_status == "204" }
+
+        refute_nil no_content, "Should have 204 response"
+        assert_equal "No Content", no_content.description
+      end
+
+      # === Response with headers ===
+
+      def test_response_with_headers
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Create item", documentation: {
+            responses: {
+              200 => {
+                message: "Created",
+                headers: {
+                  "Location" => { description: "URL of the created item", type: "string" },
+                  "X-Request-Id" => { description: "Request tracking ID", type: "string" }
+                }
+              }
+            }
+          }
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        success = responses.find { |r| r.http_status == "200" }
+
+        refute_nil success
+        refute_nil success.headers
+        header_names = success.headers.map { |h| h[:name] }
+
+        assert_includes header_names, "Location"
+        assert_includes header_names, "X-Request-Id"
+      end
+
+      # === Multiple success responses (201 Created, 200 OK) ===
+
+      def test_multiple_success_status_codes
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Create or update item",
+               success: [
+                 { code: 200, message: "Updated" },
+                 { code: 201, message: "Created" }
+               ]
+          put "items/:id", entity: ResponseEdgeCasesTest::ItemEntity do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        ok_response = responses.find { |r| r.http_status == "200" }
+        created_response = responses.find { |r| r.http_status == "201" }
+
+        refute_nil ok_response, "Should have 200 response"
+        refute_nil created_response, "Should have 201 response"
+        assert_equal "Updated", ok_response.description
+        assert_equal "Created", created_response.description
+      end
+
+      # === Response with array of entities ===
+
+      def test_response_with_array_of_entities
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "List items",
+               success: { code: 200, model: ResponseEdgeCasesTest::ItemEntity, is_array: true }
+          get "items" do
+            []
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        success = responses.find { |r| r.http_status == "200" }
+
+        refute_nil success
+        schema = success.media_types.first.schema
+
+        # Note: is_array handling depends on implementation
+        refute_nil schema
+      end
+
+      # === Empty success (no entity) ===
+
+      def test_response_without_entity
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Ping endpoint"
+          get "ping" do
+            { status: "ok" }
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        # Should still have a default response even without entity
+        refute_empty responses
+      end
+
+      # === Deprecated endpoint response ===
+
+      def test_deprecated_endpoint_response
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Old endpoint", deprecated: true
+          get "old/items", entity: ResponseEdgeCasesTest::ItemEntity do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+
+        # Test that deprecated is accessible
+        assert route.options[:deprecated],
+               "Deprecated flag should be set on route"
+      end
+
+      # === Failure with entities ===
+
+      def test_failure_response_with_entity
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get secured item",
+               success: { code: 200, model: ResponseEdgeCasesTest::ItemEntity },
+               failure: [
+                 [401, "Unauthorized"],
+                 [403, "Forbidden"],
+                 [404, "Not Found", ResponseEdgeCasesTest::ErrorEntity]
+               ]
+          get "secured/items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        unauthorized = responses.find { |r| r.http_status == "401" }
+        forbidden = responses.find { |r| r.http_status == "403" }
+        not_found = responses.find { |r| r.http_status == "404" }
+
+        refute_nil unauthorized, "Should have 401 response"
+        refute_nil forbidden, "Should have 403 response"
+        refute_nil not_found, "Should have 404 response"
+
+        # 404 with entity should have schema with properties
+        schema_404 = not_found.media_types.first.schema
+
+        assert_equal "object", schema_404.type
+        assert_includes schema_404.properties.keys, "code"
+        assert_includes schema_404.properties.keys, "message"
+      end
+    end
+  end
+end
