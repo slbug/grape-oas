@@ -36,7 +36,8 @@ module GrapeOAS
       TrueClass => SchemaTypes::BOOLEAN,
       FalseClass => SchemaTypes::BOOLEAN,
       Array => SchemaTypes::ARRAY,
-      Hash => SchemaTypes::OBJECT
+      Hash => SchemaTypes::OBJECT,
+      File => SchemaTypes::FILE
     }.freeze
 
     # String type name to schema type mapping (lowercase).
@@ -53,7 +54,9 @@ module GrapeOAS
       "trueclass" => SchemaTypes::BOOLEAN,
       "falseclass" => SchemaTypes::BOOLEAN,
       "array" => SchemaTypes::ARRAY,
-      "hash" => SchemaTypes::OBJECT
+      "hash" => SchemaTypes::OBJECT,
+      "file" => SchemaTypes::FILE,
+      "rack::multipart::uploadedfile" => SchemaTypes::FILE
     }.freeze
 
     # Resolves a primitive type name to its OpenAPI schema type.
