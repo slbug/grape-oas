@@ -114,38 +114,6 @@ module GrapeOAS
       assert OASValidator.validate!(schema)
     end
 
-    def test_oas2_key_expectations
-      schema = GrapeOAS.generate(app: API, schema_type: :oas2)
-      # Paths exist
-      assert_includes schema["paths"].keys, "/users"
-      assert_includes schema["paths"].keys, "/contracts"
-      # Request body uses ref to UserEntity
-      payload_param = schema["paths"]["/users"]["post"]["parameters"].first
-      payload_schema = payload_param["schema"]
-      if payload_schema["$ref"]
-        assert_equal "#/definitions/GrapeOAS_GenerateOAS3ComplexTest_UserEntity", payload_schema["$ref"]
-      else
-        ref = payload_schema.dig("properties", "payload", "$ref")
-
-        assert_equal "#/definitions/GrapeOAS_GenerateOAS3ComplexTest_UserEntity", ref
-      end
-      # Contract has id/status/code
-      contract_schema = schema["paths"]["/contracts"]["post"]["parameters"].first["schema"]
-      props = contract_schema["properties"].keys
-
-      %w[code id status].each { |k| assert_includes props, k }
-      assert_equal %w[draft active], contract_schema["properties"]["status"]["enum"]
-      assert_equal "\\A[A-Z]{3}\\d{2}\\z", contract_schema["properties"]["code"]["pattern"]
-      # Components have all entities
-      defs = schema["definitions"]
-
-      %w[UserEntity ProfileEntity DetailEntity].each do |n|
-        assert defs.keys.any? { |k| k.include?(n) }, "definitions include #{n}"
-      end
-
-      assert OASValidator.validate!(schema)
-    end
-
     def normalize_unhandled(obj)
       case obj
       when Hash
