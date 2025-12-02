@@ -99,7 +99,7 @@ module GrapeOAS
           name: name,
           schema: {
             "type" => header_spec[:type] || header_spec["type"] || Constants::SchemaTypes::STRING,
-            "description" => header_spec[:description] || header_spec[:desc]
+            "description" => header_spec[:description] || header_spec["description"] || header_spec[:desc]
           }.compact
         }
       end

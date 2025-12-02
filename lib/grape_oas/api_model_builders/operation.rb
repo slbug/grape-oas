@@ -24,6 +24,7 @@ module GrapeOAS
           extensions: operation_extensions,
           consumes: consumes,
           produces: produces,
+          deprecated: build_deprecated,
         )
 
         api.add_tags(*tag_names) if tag_names.any?
@@ -101,6 +102,12 @@ module GrapeOAS
         route.options.dig(:documentation, :security) ||
           route.options[:security] ||
           route.options[:auth]
+      end
+
+      def build_deprecated
+        route.options[:deprecated] ||
+          route.options.dig(:documentation, :deprecated) ||
+          false
       end
 
       def consumes
