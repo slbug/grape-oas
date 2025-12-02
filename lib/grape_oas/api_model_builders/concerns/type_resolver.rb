@@ -22,7 +22,15 @@ module GrapeOAS
           return Constants::SchemaTypes::STRING if type.nil?
 
           # Handle Ruby classes directly
-          return Constants::RUBY_TYPE_MAPPING.fetch(type, Constants::SchemaTypes::STRING) if type.is_a?(Class)
+          if type.is_a?(Class)
+            # Check static mapping first
+            return Constants::RUBY_TYPE_MAPPING[type] if Constants::RUBY_TYPE_MAPPING.key?(type)
+
+            # Handle Grape::API::Boolean dynamically (may not be loaded at constant definition time)
+            return Constants::SchemaTypes::BOOLEAN if grape_boolean_type?(type)
+
+            return Constants::SchemaTypes::STRING
+          end
 
           type_str = type.to_s
 
@@ -31,6 +39,13 @@ module GrapeOAS
 
           # Handle string/symbol type names
           Constants::PRIMITIVE_TYPE_MAPPING.fetch(type_str.downcase, Constants::SchemaTypes::STRING)
+        end
+
+        # Checks if type is Grape's Boolean class (handles dynamic loading)
+        def grape_boolean_type?(type)
+          return false unless defined?(Grape::API::Boolean)
+
+          type == Grape::API::Boolean || type.to_s == "Grape::API::Boolean"
         end
 
         # Extracts the member type from Grape's "[Type]" notation.
