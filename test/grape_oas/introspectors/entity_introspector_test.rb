@@ -5,6 +5,7 @@ require "test_helper"
 module GrapeOAS
   module Introspectors
     class EntityIntrospectorTest < Minitest::Test
+      # === Test Entities for basic property/ref tests ===
       class AddressEntity < Grape::Entity
         expose :city, documentation: { type: String }
       end
@@ -24,6 +25,27 @@ module GrapeOAS
           { "x-entity-root" => "root-ext" }
         end
       end
+
+      # === Test Entities for recursive/self-referential tests ===
+      class RecursiveNode < Grape::Entity
+        expose :id, documentation: { type: Integer }
+        expose :children, using: self, documentation: { is_array: true }
+      end
+
+      # === Test Entities for conditional/merge tests ===
+      class DetailEntity < Grape::Entity
+        expose :a, documentation: { type: String }
+        expose :b, documentation: { type: Integer }
+      end
+
+      class ConditionalEntity < Grape::Entity
+        expose :mandatory, documentation: { type: String }
+        expose :maybe, documentation: { type: String, "x-maybe" => "yes" }, if: ->(_, _) { false }
+        expose :details, using: DetailEntity, merge: true
+        expose :extras, using: DetailEntity, documentation: { is_array: true, type: DetailEntity }
+      end
+
+      # === Basic property and reference tests ===
 
       def test_builds_properties_and_refs
         schema = Introspectors::EntityIntrospector.new(UserEntity).build_schema
@@ -58,6 +80,51 @@ module GrapeOAS
         assert_includes profile.properties.keys, "bio"
 
         assert_equal "root-ext", schema.extensions["x-entity-root"]
+      end
+
+      # === Recursive/self-referential entity tests ===
+
+      def test_self_referential_entity_builds_with_ref
+        schema = EntityIntrospector.new(RecursiveNode).build_schema
+
+        # Builds top-level fields
+        assert_equal %w[children id].sort, schema.properties.keys.sort
+
+        children = schema.properties["children"]
+
+        assert_equal "array", children.type
+
+        items = children.items
+        # Recursion should short-circuit to a ref-able schema, not inline infinitely
+        assert_equal RecursiveNode.name, items.canonical_name
+        refute_nil items.canonical_name
+        # Ensure the entity still captured its own fields once
+        assert_includes items.properties.keys, "id"
+      end
+
+      # === Conditional exposure and merge tests ===
+
+      def test_conditions_mark_nullable
+        schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
+
+        refute_includes schema.required, "maybe"
+        assert schema.properties["maybe"].nullable
+        assert_equal "yes", schema.properties["maybe"].extensions["x-maybe"]
+      end
+
+      def test_merge_flattens_properties
+        schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
+
+        assert_includes schema.properties.keys, "a"
+        assert_includes schema.properties.keys, "b"
+      end
+
+      def test_array_using_with_entity
+        schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
+        extras = schema.properties["extras"]
+
+        assert_equal "array", extras.type
+        assert_equal %w[a b], extras.items.properties.keys.sort
       end
     end
   end
