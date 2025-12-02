@@ -9,7 +9,7 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Api
     class Path < Node
-      attr_rw :template, :operations
+      attr_accessor :template, :operations
 
       def initialize(template:)
         super()

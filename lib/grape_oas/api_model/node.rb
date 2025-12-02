@@ -17,10 +17,6 @@ module GrapeOAS
         @id = node_id || SecureRandom.uuid
       end
 
-      def self.attr_rw(*names)
-        names.each { |n| attr_accessor n }
-      end
-
       def ref
         "#/components/#{self.class.bucket}/#{id}"
       end

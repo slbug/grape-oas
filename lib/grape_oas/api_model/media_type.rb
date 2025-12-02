@@ -8,7 +8,7 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::RequestBody, GrapeOAS::ApiModel::Response
     class MediaType < Node
-      attr_rw :mime_type, :schema, :examples, :extensions
+      attr_accessor :mime_type, :schema, :examples, :extensions
 
       def initialize(mime_type:, schema:, examples: nil, extensions: nil)
         super()

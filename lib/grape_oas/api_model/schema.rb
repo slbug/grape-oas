@@ -8,12 +8,12 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Parameter, GrapeOAS::ApiModel::RequestBody
     class Schema < Node
-      attr_rw :canonical_name, :type, :format, :properties, :items, :description,
-              :required, :nullable, :enum, :additional_properties, :unevaluated_properties, :defs,
-              :examples, :extensions,
-              :min_length, :max_length, :pattern,
-              :minimum, :maximum, :exclusive_minimum, :exclusive_maximum,
-              :min_items, :max_items
+      attr_accessor :canonical_name, :type, :format, :properties, :items, :description,
+                    :required, :nullable, :enum, :additional_properties, :unevaluated_properties, :defs,
+                    :examples, :extensions,
+                    :min_length, :max_length, :pattern,
+                    :minimum, :maximum, :exclusive_minimum, :exclusive_maximum,
+                    :min_items, :max_items
 
       def initialize(**attrs)
         super()

@@ -9,10 +9,10 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Path
     class Operation < Node
-      attr_rw :http_method, :operation_id, :summary, :description,
-              :deprecated, :parameters, :request_body,
-              :responses, :tag_names, :security, :extensions,
-              :consumes, :produces
+      attr_accessor :http_method, :operation_id, :summary, :description,
+                    :deprecated, :parameters, :request_body,
+                    :responses, :tag_names, :security, :extensions,
+                    :consumes, :produces
 
       def initialize(http_method:, operation_id: nil, summary: nil, description: nil,
                      deprecated: false, parameters: [], request_body: nil,

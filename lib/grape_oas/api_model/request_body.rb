@@ -8,7 +8,7 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Operation
     class RequestBody < Node
-      attr_rw :description, :required, :media_types, :extensions
+      attr_accessor :description, :required, :media_types, :extensions
 
       def initialize(description: nil, required: false, media_types: [], extensions: nil)
         super()

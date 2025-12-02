@@ -8,7 +8,7 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Operation
     class Response < Node
-      attr_rw :http_status, :description, :media_types, :headers, :extensions, :examples
+      attr_accessor :http_status, :description, :media_types, :headers, :extensions, :examples
 
       def initialize(http_status:, description:, media_types: [], headers: [], extensions: nil, examples: nil)
         super()

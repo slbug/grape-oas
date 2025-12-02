@@ -11,8 +11,8 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Path
     class API < Node
-      attr_rw :title, :version, :paths, :servers, :tag_defs, :components,
-              :host, :base_path, :schemes, :security_definitions, :security
+      attr_accessor :title, :version, :paths, :servers, :tag_defs, :components,
+                    :host, :base_path, :schemes, :security_definitions, :security
 
       def initialize(title:, version:)
         super()

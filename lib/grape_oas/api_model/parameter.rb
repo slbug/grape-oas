@@ -8,7 +8,7 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Operation
     class Parameter < Node
-      attr_rw :location, :name, :required, :description, :schema
+      attr_accessor :location, :name, :required, :description, :schema
 
       def initialize(location:, name:, schema:, required: false, description: nil)
         super()
