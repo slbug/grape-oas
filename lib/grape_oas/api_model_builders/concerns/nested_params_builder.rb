@@ -146,10 +146,28 @@ module GrapeOAS
         end
 
         # Applies any documentation extensions from parent spec.
+        # rubocop:disable Metrics/AbcSize
         def apply_documentation_extensions(schema, parent_spec)
           doc = parent_spec[:documentation] || {}
           schema.description = doc[:desc] if doc[:desc]
+
+          # Apply additional_properties
+          if doc.key?(:additional_properties) && schema.respond_to?(:additional_properties=)
+            schema.additional_properties = doc[:additional_properties]
+          end
+
+          # Apply unevaluated_properties
+          if doc.key?(:unevaluated_properties) && schema.respond_to?(:unevaluated_properties=)
+            schema.unevaluated_properties = doc[:unevaluated_properties]
+          end
+
+          # Apply format
+          schema.format = doc[:format] if doc[:format] && schema.respond_to?(:format=)
+
+          # Apply example
+          schema.examples = doc[:example] if doc[:example] && schema.respond_to?(:examples=)
         end
+        # rubocop:enable Metrics/AbcSize
 
         # Checks if a param is explicitly marked as NOT a body param (e.g., query, header).
         def explicit_non_body_param?(spec)
