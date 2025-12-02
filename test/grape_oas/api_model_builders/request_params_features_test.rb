@@ -107,7 +107,7 @@ module GrapeOAS
 
       # === Hidden parameters (grape-swagger api_swagger_v2_hide_param_spec.rb) ===
 
-      def test_hidden_parameter_boolean_false
+      def test_hidden_parameter_is_excluded
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -123,10 +123,76 @@ module GrapeOAS
         builder = RequestParams.new(api: @api, route: route)
         _body_schema, params = builder.build
 
-        # Hidden params might be filtered or included with hidden flag
         visible_param = params.find { |p| p.name == "visible" }
+        hidden_param = params.find { |p| p.name == "hidden_param" }
 
         refute_nil visible_param
+        assert_nil hidden_param
+      end
+
+      def test_hidden_parameter_with_proc
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :visible, type: String
+            optional :proc_hidden, type: String, documentation: { hidden: proc { true } }
+            optional :proc_visible, type: String, documentation: { hidden: proc { false } }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "visible"
+        refute_includes param_names, "proc_hidden"
+        assert_includes param_names, "proc_visible"
+      end
+
+      def test_required_param_never_hidden
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :required_but_marked_hidden, type: String, documentation: { hidden: true }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        # Required params should never be hidden, even if marked as such
+        param = params.find { |p| p.name == "required_but_marked_hidden" }
+
+        refute_nil param
+      end
+
+      def test_hidden_body_parameter_is_excluded
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :visible, type: String, documentation: { param_type: "body" }
+            optional :hidden_field, type: String, documentation: { param_type: "body", hidden: true }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        assert_includes body_schema.properties.keys, "visible"
+        refute_includes body_schema.properties.keys, "hidden_field"
       end
 
       # === Extensions on parameters (x-* fields) ===

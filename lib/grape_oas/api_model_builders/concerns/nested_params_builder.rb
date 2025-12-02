@@ -27,6 +27,8 @@ module GrapeOAS
             # Skip path params and explicitly non-body params
             next if path_params.include?(name)
             next if explicit_non_body_param?(spec)
+            # Skip hidden params
+            next if hidden_parameter?(spec)
 
             child_schema = build_schema_for_spec(spec)
 

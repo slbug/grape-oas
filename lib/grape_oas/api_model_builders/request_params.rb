@@ -50,6 +50,8 @@ module GrapeOAS
         path_params = []
 
         all_params.each do |name, spec|
+          next if hidden_parameter?(spec)
+
           location = route_params.include?(name) ? "path" : extract_location(spec: spec)
           required = spec[:required] || false
           schema = build_schema_for_spec(spec)
@@ -81,6 +83,8 @@ module GrapeOAS
           next if name.include?("[")
           # Skip Hash/body params
           next if body_param?(spec)
+          # Skip hidden params
+          next if hidden_parameter?(spec)
 
           location = route_params.include?(name) ? "path" : extract_location(spec: spec)
           next if location == "body"
@@ -101,6 +105,16 @@ module GrapeOAS
 
       def extract_collection_format(spec)
         spec.dig(:documentation, :collectionFormat) || spec.dig(:documentation, :collection_format)
+      end
+
+      # Checks if a parameter should be hidden from documentation.
+      # Required parameters are never hidden (matching grape-swagger behavior).
+      def hidden_parameter?(spec)
+        return false if spec[:required]
+
+        hidden = spec.dig(:documentation, :hidden)
+        hidden = hidden.call if hidden.respond_to?(:call)
+        hidden
       end
 
       def extract_location(spec:)
