@@ -49,12 +49,14 @@ module GrapeOAS
       "bigdecimal" => SchemaTypes::NUMBER,
       "string" => SchemaTypes::STRING,
       "integer" => SchemaTypes::INTEGER,
+      "number" => SchemaTypes::NUMBER,
       "boolean" => SchemaTypes::BOOLEAN,
       "grape::api::boolean" => SchemaTypes::BOOLEAN,
       "trueclass" => SchemaTypes::BOOLEAN,
       "falseclass" => SchemaTypes::BOOLEAN,
       "array" => SchemaTypes::ARRAY,
       "hash" => SchemaTypes::OBJECT,
+      "object" => SchemaTypes::OBJECT,
       "file" => SchemaTypes::FILE,
       "rack::multipart::uploadedfile" => SchemaTypes::FILE
     }.freeze
