@@ -16,79 +16,127 @@ module GrapeOAS
       end
 
       def build_schema
-        pushed = false
+        return cached_schema if cached_schema_available?
+        return build_inherited_schema(find_parent_entity) if inherits_with_discriminator?
 
-        # Return cached schema (already built) if present
+        schema = initialize_or_reuse_schema
+        return handle_cycle(schema) if cyclic_reference?
+
+        with_cycle_tracking { populate_schema(schema) }
+      end
+
+      private
+
+      def cached_schema_available?
         built = @registry[@entity_class]
-        return built if built && !built.properties.empty?
+        built && !built.properties.empty?
+      end
 
-        # Check for inheritance with discriminator - use allOf for polymorphism
-        parent_entity = find_parent_entity
-        return build_inherited_schema(parent_entity) if parent_entity && parent_has_discriminator?(parent_entity)
+      def cached_schema
+        @registry[@entity_class]
+      end
 
-        # Build (or reuse placeholder) for this entity
-        schema = (@registry[@entity_class] ||= ApiModel::Schema.new(
+      def inherits_with_discriminator?
+        parent = find_parent_entity
+        parent && parent_has_discriminator?(parent)
+      end
+
+      def initialize_or_reuse_schema
+        @registry[@entity_class] ||= ApiModel::Schema.new(
           type: Constants::SchemaTypes::OBJECT,
           canonical_name: @entity_class.name,
           description: nil,
           nullable: nil,
-        ))
+        )
+      end
 
-        if @stack.include?(@entity_class)
-          schema.description ||= "Cycle detected while introspecting"
-          return schema
-        end
+      def cyclic_reference?
+        @stack.include?(@entity_class)
+      end
 
+      def handle_cycle(schema)
+        schema.description ||= "Cycle detected while introspecting"
+        schema
+      end
+
+      def with_cycle_tracking
         @stack << @entity_class
-        pushed = true
-        doc = entity_doc
+        yield
+      ensure
+        @stack.pop
+      end
 
+      def populate_schema(schema)
+        doc = entity_doc
+        apply_schema_metadata(schema, doc)
+        add_exposures_to_schema(schema)
+        schema
+      end
+
+      def apply_schema_metadata(schema, doc)
         schema.description ||= extract_description(doc)
         schema.nullable = extract_nullable(doc) if schema.nullable.nil?
-
-        # Apply entity-level schema properties from documentation
         apply_entity_level_properties(schema, doc)
+        apply_extensions(schema, doc)
+        apply_discriminator(schema)
+      end
 
+      def apply_extensions(schema, doc)
         root_ext = doc.select { |k, _| k.to_s.start_with?("x-") }
         schema.extensions = root_ext if root_ext.any?
+      end
 
-        # Check for discriminator field
+      def apply_discriminator(schema)
         discriminator_field = find_discriminator_field
         schema.discriminator = discriminator_field if discriminator_field
+      end
 
+      def add_exposures_to_schema(schema)
         exposures.each do |exposure|
           next unless exposed?(exposure)
 
-          name = exposure.key.to_s
-          doc = exposure.documentation || {}
-          opts = exposure.instance_variable_get(:@options) || {}
-
-          if merge_exposure?(exposure, doc, opts)
-            merged_schema = schema_for_merge(exposure, doc)
-            merged_schema.properties.each do |n, ps|
-              schema.add_property(n, ps, required: merged_schema.required.include?(n))
-            end
-            next
-          end
-
-          prop_schema = schema_for_exposure(exposure, doc)
-          if conditional?(exposure)
-            prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
-            doc = doc.merge(required: false)
-          end
-          is_array = doc[:is_array] || doc["is_array"]
-
-          prop_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema) if is_array
-
-          schema.add_property(name, prop_schema, required: doc[:required])
+          add_exposure_to_schema(schema, exposure)
         end
-
-        schema
-      ensure
-        @stack.pop if pushed
       end
 
-      private
+      def add_exposure_to_schema(schema, exposure)
+        doc = exposure.documentation || {}
+        opts = exposure.instance_variable_get(:@options) || {}
+
+        if merge_exposure?(exposure, doc, opts)
+          merge_exposure_into_schema(schema, exposure, doc)
+        else
+          add_property_from_exposure(schema, exposure, doc)
+        end
+      end
+
+      def merge_exposure_into_schema(schema, exposure, doc)
+        merged_schema = schema_for_merge(exposure, doc)
+        merged_schema.properties.each do |n, ps|
+          schema.add_property(n, ps, required: merged_schema.required.include?(n))
+        end
+      end
+
+      def add_property_from_exposure(schema, exposure, doc)
+        prop_schema = schema_for_exposure(exposure, doc)
+        doc = apply_conditional_modifiers(prop_schema, doc, exposure)
+        prop_schema = wrap_in_array_if_needed(prop_schema, doc)
+        schema.add_property(exposure.key.to_s, prop_schema, required: doc[:required])
+      end
+
+      def apply_conditional_modifiers(prop_schema, doc, exposure)
+        return doc unless conditional?(exposure)
+
+        prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
+        doc.merge(required: false)
+      end
+
+      def wrap_in_array_if_needed(prop_schema, doc)
+        is_array = doc[:is_array] || doc["is_array"]
+        return prop_schema unless is_array
+
+        ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
+      end
 
       def entity_doc
         @entity_class.respond_to?(:documentation) ? (@entity_class.documentation || {}) : {}
