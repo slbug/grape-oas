@@ -26,6 +26,14 @@ module GrapeOAS
       ALL = [JSON, XML, FORM_URLENCODED, MULTIPART_FORM].freeze
     end
 
+    # Default values for OpenAPI spec when not provided by user
+    module Defaults
+      LICENSE_NAME = "Proprietary"
+      LICENSE_URL = "https://example.com/license"
+      LICENSE_IDENTIFIER = "UNLICENSED"
+      SERVER_URL = "https://api.example.com"
+    end
+
     # Ruby class to schema type mapping.
     # Used for automatic type inference from parameter declarations.
     # Note: String is not included as it's the default fallback.

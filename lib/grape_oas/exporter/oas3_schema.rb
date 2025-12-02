@@ -40,10 +40,10 @@ module GrapeOAS
         license = if @api.respond_to?(:license) && @api.license
                     @api.license.dup
                   else
-                    { "name" => "Proprietary", "url" => "https://grape.local/license" }
+                    { "name" => Constants::Defaults::LICENSE_NAME, "url" => Constants::Defaults::LICENSE_URL }
                   end
         license.delete("identifier")
-        license["url"] ||= "https://grape.local/license"
+        license["url"] ||= Constants::Defaults::LICENSE_URL
         info["license"] = license
         info
       end
@@ -53,7 +53,7 @@ module GrapeOAS
           srv.is_a?(Hash) ? srv : { "url" => srv.to_s }
         end
 
-        servers = [{ "url" => "https://api.grape.local" }] if servers.empty?
+        servers = [{ "url" => Constants::Defaults::SERVER_URL }] if servers.empty?
 
         servers
       end

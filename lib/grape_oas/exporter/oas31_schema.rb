@@ -15,7 +15,8 @@ module GrapeOAS
                     @api.license
                   else
                     # OAS 3.1 requires exactly one of 'identifier' OR 'url' (not both)
-                    { "name" => "Proprietary", "identifier" => "UNLICENSED" }
+                    { "name" => Constants::Defaults::LICENSE_NAME,
+                      "identifier" => Constants::Defaults::LICENSE_IDENTIFIER }
                   end
         info["license"] = license
         info
