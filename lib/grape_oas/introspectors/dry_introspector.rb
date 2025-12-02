@@ -47,11 +47,9 @@ module GrapeOAS
 
         contract.types.each do |name, dry_type|
           constraints = rule_constraints[name]
-          @current_constraints = constraints
           prop_schema = build_schema_for_type(dry_type, constraints)
-          schema.add_property(name, prop_schema, required: required?(dry_type))
+          schema.add_property(name, prop_schema, required: required?(dry_type, constraints: constraints))
         end
-        @current_constraints = nil
 
         schema
       end
@@ -60,9 +58,9 @@ module GrapeOAS
 
       attr_reader :contract
 
-      def required?(dry_type)
+      def required?(dry_type, constraints: nil)
         # prefer rule-derived info if present
-        return @current_constraints.required if @current_constraints && !@current_constraints.required.nil?
+        return constraints.required if constraints && !constraints.required.nil?
 
         meta = dry_type.respond_to?(:meta) ? dry_type.meta : {}
         return false if dry_type.respond_to?(:optional?) && dry_type.optional?
