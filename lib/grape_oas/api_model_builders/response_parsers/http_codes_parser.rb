@@ -54,6 +54,8 @@ module GrapeOAS
         end
 
         def normalize_array_entry(entry, route)
+          return normalize_plain_entry(nil, route) if entry.empty?
+
           code, message, entity = entry
           {
             code: code,
