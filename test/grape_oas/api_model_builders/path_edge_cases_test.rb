@@ -36,6 +36,113 @@ module GrapeOAS
         refute paths.any? { |p| p.include?("hidden") }, "Hidden endpoint should be filtered out"
       end
 
+      def test_hidden_endpoint_via_desc_option
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          desc "Visible endpoint"
+          get "visible" do
+            {}
+          end
+
+          desc "Hidden endpoint", hidden: true
+          get "hidden" do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, app: api_class)
+        builder.build
+
+        paths = @api.paths.map(&:template)
+
+        assert(paths.any? { |p| p.include?("visible") })
+        refute paths.any? { |p| p.include?("hidden") }, "Hidden via desc option should be filtered out"
+      end
+
+      def test_hidden_endpoint_via_verb_option
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          get "visible" do
+            {}
+          end
+
+          get "hidden", hidden: true do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, app: api_class)
+        builder.build
+
+        paths = @api.paths.map(&:template)
+
+        assert(paths.any? { |p| p.include?("visible") })
+        refute paths.any? { |p| p.include?("hidden") }, "Hidden via verb option should be filtered out"
+      end
+
+      def test_hidden_endpoint_with_lambda_true
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          desc "Visible endpoint"
+          get "visible" do
+            {}
+          end
+
+          desc "Conditionally hidden", hidden: -> { true }
+          get "hidden" do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, app: api_class)
+        builder.build
+
+        paths = @api.paths.map(&:template)
+
+        assert(paths.any? { |p| p.include?("visible") })
+        refute paths.any? { |p| p.include?("hidden") }, "Lambda returning true should hide endpoint"
+      end
+
+      def test_hidden_endpoint_with_lambda_false
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          desc "Conditionally visible", hidden: -> { false }
+          get "conditional" do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, app: api_class)
+        builder.build
+
+        paths = @api.paths.map(&:template)
+
+        assert(paths.any? { |p| p.include?("conditional") }, "Lambda returning false should show endpoint")
+      end
+
+      def test_desc_hidden_overrides_swagger_setting
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          route_setting :swagger, hidden: false
+          desc "This should be hidden", hidden: true
+          get "hidden" do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, app: api_class)
+        builder.build
+
+        paths = @api.paths.map(&:template)
+
+        refute paths.any? { |p| p.include?("hidden") }, "desc hidden should override swagger setting"
+      end
+
       # === Multiple mounted APIs ===
 
       def test_mounted_apis_routes_collected

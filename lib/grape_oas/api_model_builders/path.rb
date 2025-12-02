@@ -58,8 +58,17 @@ module GrapeOAS
       private
 
       def skip_route?(route)
-        # Check both options and settings for backward compatibility
-        route.options.dig(:swagger, :hidden) || route.settings.dig(:swagger, :hidden)
+        # Check route_setting :swagger, hidden: true
+        route_hidden = route.settings.dig(:swagger, :hidden)
+        # Check desc "...", swagger: { hidden: true }
+        route_hidden = route.options.dig(:swagger, :hidden) if route.options.dig(:swagger, :hidden)
+        # Direct hidden option takes precedence (from desc hidden: or verb method options)
+        route_hidden = route.options[:hidden] if route.options.key?(:hidden)
+
+        # Support callable objects (Proc/lambda) for conditional hiding
+        route_hidden = route_hidden.call if route_hidden.respond_to?(:call)
+
+        route_hidden
       end
 
       def build_operation(route, path_param_name_map: nil, template_override: nil)
