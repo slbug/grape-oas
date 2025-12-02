@@ -9,13 +9,17 @@ module GrapeOAS
         @processor ||= Introspectors::DryIntrospector
       end
 
+      def constraint_extractor
+        @constraint_extractor ||= Introspectors::ConstraintExtractor
+      end
+
       def test_or_branch_intersection_keeps_common_enum
         ast = [:or, [
           [:predicate, [:included_in?, [[:list, %w[a b]], [:input, nil]]]],
           [:predicate, [:included_in?, [[:list, %w[b c]], [:input, nil]]]]
         ]]
 
-        constraints = processor.new(nil).send(:walk_ast, ast)
+        constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
 
         assert_equal %w[b], constraints.enum
       end
@@ -61,7 +65,7 @@ module GrapeOAS
 
       def test_type_predicate_recorded
         ast = [:predicate, [:type?, [[:class, Integer], [:input, nil]]]]
-        constraints = processor.new(nil).send(:walk_ast, ast)
+        constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
         schema = GrapeOAS::ApiModel::Schema.new(type: "string")
         processor.new(nil).send(:apply_rule_constraints, schema, constraints)
 
@@ -73,7 +77,7 @@ module GrapeOAS
           [:predicate, [:min?, [[:num, 2], [:input, nil]]]],
           [:predicate, [:max?, [[:num, 5], [:input, nil]]]]
         ]]
-        constraints = processor.new(nil).send(:walk_ast, ast)
+        constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
         schema = GrapeOAS::ApiModel::Schema.new(type: "integer")
         processor.new(nil).send(:apply_rule_constraints, schema, constraints)
 
@@ -83,7 +87,7 @@ module GrapeOAS
 
       def test_empty_predicate_sets_size_zero
         ast = [:predicate, [:empty?, [[:input, nil]]]]
-        constraints = processor.new(nil).send(:walk_ast, ast)
+        constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
         schema = GrapeOAS::ApiModel::Schema.new(type: "array")
         processor.new(nil).send(:apply_rule_constraints, schema, constraints)
 
@@ -93,7 +97,7 @@ module GrapeOAS
 
       def test_parity_predicates_recorded
         ast = [:predicate, [:odd?, [[:input, nil]]]]
-        constraints = processor.new(nil).send(:walk_ast, ast)
+        constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
         schema = GrapeOAS::ApiModel::Schema.new(type: "integer")
         processor.new(nil).send(:apply_rule_constraints, schema, constraints)
 
@@ -106,10 +110,10 @@ module GrapeOAS
         ast_false = [:predicate, [:false?, [[:input, nil]]]]
         ast_bytes = [:predicate, [:bytesize?, [[:num, 3], [:num, 8]]]]
 
-        mult_constraints = processor.new(nil).send(:walk_ast, ast_mult)
-        bytes_constraints = processor.new(nil).send(:walk_ast, ast_bytes)
-        true_constraints = processor.new(nil).send(:walk_ast, ast_true)
-        false_constraints = processor.new(nil).send(:walk_ast, ast_false)
+        mult_constraints = constraint_extractor.new(nil).send(:walk_ast, ast_mult)
+        bytes_constraints = constraint_extractor.new(nil).send(:walk_ast, ast_bytes)
+        true_constraints = constraint_extractor.new(nil).send(:walk_ast, ast_true)
+        false_constraints = constraint_extractor.new(nil).send(:walk_ast, ast_false)
 
         num_schema = GrapeOAS::ApiModel::Schema.new(type: "integer")
         str_schema = GrapeOAS::ApiModel::Schema.new(type: "string")
@@ -134,11 +138,11 @@ module GrapeOAS
         datetime_ast = [:predicate, [:date_time?, [[:input, nil]]]]
         bool_ast = [:predicate, [:bool?, [[:input, nil]]]]
 
-        uuid_constraints = processor.new(nil).send(:walk_ast, uuid_ast)
-        email_constraints = processor.new(nil).send(:walk_ast, email_ast)
-        date_constraints = processor.new(nil).send(:walk_ast, date_ast)
-        datetime_constraints = processor.new(nil).send(:walk_ast, datetime_ast)
-        bool_constraints = processor.new(nil).send(:walk_ast, bool_ast)
+        uuid_constraints = constraint_extractor.new(nil).send(:walk_ast, uuid_ast)
+        email_constraints = constraint_extractor.new(nil).send(:walk_ast, email_ast)
+        date_constraints = constraint_extractor.new(nil).send(:walk_ast, date_ast)
+        datetime_constraints = constraint_extractor.new(nil).send(:walk_ast, datetime_ast)
+        bool_constraints = constraint_extractor.new(nil).send(:walk_ast, bool_ast)
 
         uuid_schema = GrapeOAS::ApiModel::Schema.new(type: "string")
         email_schema = GrapeOAS::ApiModel::Schema.new(type: "string")
