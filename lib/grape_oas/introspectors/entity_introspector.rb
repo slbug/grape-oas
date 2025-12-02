@@ -29,7 +29,6 @@ module GrapeOAS
         ))
 
         if @stack.include?(@entity_class)
-          debug("Cycle detected while introspecting #{@entity_class.name}: #{stack_path(@entity_class)}")
           schema.description ||= "Cycle detected while introspecting"
           return schema
         end
@@ -62,7 +61,6 @@ module GrapeOAS
             next
           end
 
-          debug("Introspecting #{current_entity_name}.#{name}")
           prop_schema = schema_for_exposure(exposure, doc)
           if conditional?(exposure)
             prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
@@ -215,20 +213,6 @@ module GrapeOAS
       # Extract merge flag from multiple sources
       def extract_merge_flag(exposure, doc, opts)
         opts[:merge] || doc[:merge] || (exposure.respond_to?(:for_merge) && exposure.for_merge)
-      end
-
-      def debug(message)
-        return unless ENV["GRAPEOAS_DEBUG"]
-
-        warn("[grape-oas] #{message}")
-      end
-
-      def current_entity_name
-        @entity_class&.name || @entity_class.to_s
-      end
-
-      def stack_path(target)
-        (@stack + [target]).map { |cls| cls&.name || cls.to_s }.join(" -> ")
       end
     end
   end
