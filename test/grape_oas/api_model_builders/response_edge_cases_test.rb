@@ -167,7 +167,7 @@ module GrapeOAS
         refute_nil success
         schema = success.media_types.first.schema
 
-        # Note: is_array handling depends on implementation
+        # NOTE: is_array handling depends on implementation
         refute_nil schema
       end
 

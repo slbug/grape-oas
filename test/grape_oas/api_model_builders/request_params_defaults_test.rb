@@ -93,7 +93,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            optional :tags, type: Array[String], default: %w[default], documentation: { param_type: "body" }
+            optional :tags, type: [String], default: %w[default], documentation: { param_type: "body" }
           end
           post "items" do
             {}
@@ -190,7 +190,7 @@ module GrapeOAS
           format :json
           params do
             optional :value, type: String, default: "param_default",
-                            documentation: { default: "doc_default" }
+                             documentation: { default: "doc_default" }
           end
           get "test" do
             {}

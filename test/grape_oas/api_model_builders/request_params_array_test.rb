@@ -15,7 +15,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :tags, type: Array[String], documentation: { param_type: "body" }
+            requires :tags, type: [String], documentation: { param_type: "body" }
           end
           post "items" do
             {}
@@ -36,7 +36,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :ids, type: Array[Integer], documentation: { param_type: "body" }
+            requires :ids, type: [Integer], documentation: { param_type: "body" }
           end
           post "batch" do
             {}
@@ -135,8 +135,8 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :tags, type: Array[String], documentation: { param_type: "body" }
-            requires :categories, type: Array[Integer], documentation: { param_type: "body" }
+            requires :tags, type: [String], documentation: { param_type: "body" }
+            requires :categories, type: [Integer], documentation: { param_type: "body" }
           end
           post "multi" do
             {}
@@ -160,7 +160,7 @@ module GrapeOAS
           format :json
           params do
             requires :name, type: String, documentation: { param_type: "body" }
-            optional :flags, type: Array[String], documentation: { param_type: "body" }
+            optional :flags, type: [String], documentation: { param_type: "body" }
           end
           post "items" do
             {}
@@ -181,7 +181,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            optional :ids, type: Array[Integer], documentation: { param_type: "query" }
+            optional :ids, type: [Integer], documentation: { param_type: "query" }
           end
           get "items" do
             {}

@@ -53,6 +53,7 @@ module GrapeOAS
 
         def test_grape_boolean_class_resolves_to_boolean
           skip "Grape::API::Boolean may not be available" unless defined?(Grape::API::Boolean)
+
           assert_equal "boolean", resolve_schema_type(Grape::API::Boolean)
         end
 
@@ -64,6 +65,7 @@ module GrapeOAS
 
         def test_json_type_resolves_to_object
           skip "JSON type may need special handling"
+
           assert_equal "object", resolve_schema_type(JSON)
         end
 

@@ -85,7 +85,7 @@ module GrapeOAS
       class RecursiveEntity < Grape::Entity
         expose :name, documentation: { type: String }
         expose :children, using: "GrapeOAS::Introspectors::EntityIntrospectorDeepNestingTest::RecursiveEntity",
-                         documentation: { type: String, is_array: true }
+                          documentation: { type: String, is_array: true }
       end
 
       def test_recursive_self_reference_handles_cycle

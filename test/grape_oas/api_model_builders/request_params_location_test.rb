@@ -27,6 +27,7 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         path_params = op.parameters.select { |p| p.location == "path" }
+
         assert_equal 1, path_params.length
         assert_equal "id", path_params.first.name
       end
@@ -49,6 +50,7 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         query_params = op.parameters.select { |p| p.location == "query" }
+
         assert_equal 2, query_params.length
       end
 
@@ -95,8 +97,8 @@ module GrapeOAS
         path_params = op.parameters.select { |p| p.location == "path" }
         query_params = op.parameters.select { |p| p.location == "query" }
 
-        assert path_params.any? { |p| p.name == "user_id" }
-        assert query_params.any? { |p| p.name == "include_deleted" }
+        assert(path_params.any? { |p| p.name == "user_id" })
+        assert(query_params.any? { |p| p.name == "include_deleted" })
       end
 
       # === PUT with path and nested body params ===
@@ -120,7 +122,8 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         path_params = op.parameters.select { |p| p.location == "path" }
-        assert path_params.any? { |p| p.name == "id" }
+
+        assert(path_params.any? { |p| p.name == "id" })
 
         # Nested params go to request body
         refute_nil op.request_body
@@ -143,6 +146,7 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         path_params = op.parameters.select { |p| p.location == "path" }
+
         assert_equal 1, path_params.length
         assert_equal "id", path_params.first.name
       end
@@ -183,7 +187,8 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         query_params = op.parameters.select { |p| p.location == "query" }
-        assert query_params.any? { |p| p.name == "filter" }
+
+        assert(query_params.any? { |p| p.name == "filter" })
       end
 
       # === Header parameter location ===
@@ -203,7 +208,8 @@ module GrapeOAS
         op = build_operation(route, api_class)
 
         header_params = op.parameters.select { |p| p.location == "header" }
-        assert header_params.any? { |p| p.name == "authorization" }
+
+        assert(header_params.any? { |p| p.name == "authorization" })
       end
 
       # === Multiple path params in nested route ===

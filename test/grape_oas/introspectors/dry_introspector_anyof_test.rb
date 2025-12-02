@@ -12,17 +12,17 @@ module GrapeOAS
 
         CatType = Types::Hash.schema(
           meow_volume: Types::Integer,
-          whiskers: Types::String
+          whiskers: Types::String,
         )
 
         DogType = Types::Hash.schema(
           bark_volume: Types::Integer,
-          breed: Types::String
+          breed: Types::String,
         )
 
         ElephantType = Types::Hash.schema(
           trunk_length: Types::Integer,
-          tusk_size: Types::String
+          tusk_size: Types::String,
         )
 
         TwoAnimalType = CatType | DogType
@@ -50,6 +50,7 @@ module GrapeOAS
         animal_schema = schema.properties["animal"]
 
         cat_schema = animal_schema.any_of[0]
+
         assert_equal "object", cat_schema.type
         assert_includes cat_schema.properties.keys, "meow_volume"
         assert_includes cat_schema.properties.keys, "whiskers"
@@ -60,6 +61,7 @@ module GrapeOAS
         animal_schema = schema.properties["animal"]
 
         dog_schema = animal_schema.any_of[1]
+
         assert_equal "object", dog_schema.type
         assert_includes dog_schema.properties.keys, "bark_volume"
         assert_includes dog_schema.properties.keys, "breed"
@@ -86,6 +88,7 @@ module GrapeOAS
         animal_schema = schema.properties["animal"]
 
         all_props = animal_schema.any_of.flat_map { |s| s.properties.keys }
+
         assert_includes all_props, "meow_volume"
         assert_includes all_props, "bark_volume"
         assert_includes all_props, "trunk_length"
@@ -133,11 +136,13 @@ module GrapeOAS
 
       def test_extract_sum_types_two_types
         types = DryIntrospectorSupport::TypeUnwrapper.extract_sum_types(Types::TwoAnimalType)
+
         assert_equal 2, types.length
       end
 
       def test_extract_sum_types_three_types
         types = DryIntrospectorSupport::TypeUnwrapper.extract_sum_types(Types::ThreeAnimalType)
+
         assert_equal 3, types.length
       end
     end

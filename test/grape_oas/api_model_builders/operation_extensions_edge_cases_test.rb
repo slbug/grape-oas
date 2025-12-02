@@ -168,7 +168,7 @@ module GrapeOAS
           format :json
           desc "Symbol keys", documentation: {
             "x-string-key": "string",
-            :"x-symbol-key" => "symbol"
+            "x-symbol-key": "symbol"
           }
           get "keys" do
             {}

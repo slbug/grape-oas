@@ -32,7 +32,7 @@ module GrapeOAS
 
         paths = @api.paths.map(&:template)
 
-        assert paths.any? { |p| p.include?("visible") }
+        assert(paths.any? { |p| p.include?("visible") })
         refute paths.any? { |p| p.include?("hidden") }, "Hidden endpoint should be filtered out"
       end
 
@@ -234,9 +234,9 @@ module GrapeOAS
         paths = @api.paths.map(&:template)
         path = paths.first
 
-        assert path.include?("{org_id}"), "org_id should be converted"
-        assert path.include?("{team_id}"), "team_id should be converted"
-        assert path.include?("{member_id}"), "member_id should be converted"
+        assert_includes path, "{org_id}", "org_id should be converted"
+        assert_includes path, "{team_id}", "team_id should be converted"
+        assert_includes path, "{member_id}", "member_id should be converted"
       end
 
       # === Group (resource) handling ===
@@ -275,8 +275,8 @@ module GrapeOAS
 
         paths = @api.paths.map(&:template)
 
-        assert paths.include?("/articles"), "Collection path should exist"
-        assert paths.include?("/articles/{id}"), "Resource path should exist"
+        assert_includes paths, "/articles", "Collection path should exist"
+        assert_includes paths, "/articles/{id}", "Resource path should exist"
       end
     end
   end

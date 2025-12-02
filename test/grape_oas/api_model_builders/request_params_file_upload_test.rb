@@ -129,7 +129,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :files, type: Array[File], documentation: { param_type: "body" }
+            requires :files, type: [File], documentation: { param_type: "body" }
           end
           post "bulk-upload" do
             {}

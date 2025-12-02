@@ -99,7 +99,7 @@ module GrapeOAS
                      end
 
         # Pass the contract class (not schema_obj) so DryIntrospector can detect inheritance
-      return GrapeOAS::Introspectors::DryIntrospector.build(contract) if schema_obj.respond_to?(:types)
+        return GrapeOAS::Introspectors::DryIntrospector.build(contract) if schema_obj.respond_to?(:types)
 
         contract_hash = if contract.respond_to?(:to_h)
                           contract.to_h

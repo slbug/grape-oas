@@ -174,7 +174,7 @@ module GrapeOAS
       def test_symbol_format_in_produces
         api_class = Class.new(Grape::API) do
           format :json
-          desc "Symbol produces", produces: [:xml, :json]
+          desc "Symbol produces", produces: %i[xml json]
           get "symbols" do
             {}
           end

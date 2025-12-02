@@ -12,22 +12,19 @@ module GrapeOAS
 
         def build
           return {} unless @schema
+          return build_all_of_schema if @schema.all_of && !@schema.all_of.empty?
+          return build_one_of_schema if @schema.one_of && !@schema.one_of.empty?
+          return build_any_of_schema if @schema.any_of && !@schema.any_of.empty?
 
-          # Handle allOf composition (for inheritance)
-          if @schema.all_of && !@schema.all_of.empty?
-            return build_all_of_schema
-          end
+          schema_hash = build_base_hash
+          apply_examples(schema_hash)
+          sanitize_enum_against_type(schema_hash)
+          apply_extensions_and_extra_properties(schema_hash)
+          apply_all_constraints(schema_hash)
+          schema_hash.compact
+        end
 
-          # Handle oneOf composition
-          if @schema.one_of && !@schema.one_of.empty?
-            return build_one_of_schema
-          end
-
-          # Handle anyOf composition
-          if @schema.any_of && !@schema.any_of.empty?
-            return build_any_of_schema
-          end
-
+        def build_base_hash
           schema_hash = {}
           schema_hash["type"] = nullable_type
           schema_hash["format"] = @schema.format
@@ -37,11 +34,17 @@ module GrapeOAS
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
-          if @schema.examples
-            examples = Array(@schema.examples).map { |ex| coerce_example(ex, schema_hash["type"]) }
-            schema_hash["example"] = examples.first
-          end
-          sanitize_enum_against_type(schema_hash)
+          schema_hash
+        end
+
+        def apply_examples(schema_hash)
+          return unless @schema.examples
+
+          examples = Array(@schema.examples).map { |ex| coerce_example(ex, schema_hash["type"]) }
+          schema_hash["example"] = examples.first
+        end
+
+        def apply_extensions_and_extra_properties(schema_hash)
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != Constants::SchemaTypes::OBJECT
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
@@ -49,14 +52,13 @@ module GrapeOAS
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
           end
           schema_hash["$defs"] = @schema.defs if !@nullable_keyword && @schema.defs && !@schema.defs.empty?
-
-          # OAS3 discriminator is an object with propertyName (and optional mapping)
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
+        end
 
+        def apply_all_constraints(schema_hash)
           apply_numeric_constraints(schema_hash)
           apply_string_constraints(schema_hash)
           apply_array_constraints(schema_hash)
-          schema_hash.compact
         end
 
         private

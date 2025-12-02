@@ -69,7 +69,7 @@ class DocumentationExtensionTest < Minitest::Test
       security_definitions: {
         api_key: { type: "apiKey", name: "X-API-Key", in: "header" }
       },
-      security: [{ api_key: [] }]
+      security: [{ api_key: [] }],
     )
   end
 
@@ -99,7 +99,7 @@ class DocumentationExtensionTest < Minitest::Test
   def test_host_extracted_from_request_when_not_provided
     resp = Rack::MockRequest.new(CustomMountPathAPI).get(
       "/oas_schema?oas=2",
-      "HTTP_HOST" => "dynamic.example.com"
+      "HTTP_HOST" => "dynamic.example.com",
     )
 
     assert_equal 200, resp.status
@@ -112,7 +112,7 @@ class DocumentationExtensionTest < Minitest::Test
   def test_explicit_host_takes_precedence_over_request_host
     resp = Rack::MockRequest.new(DocAPI).get(
       "/swagger_doc.json?oas=2",
-      "HTTP_HOST" => "should-be-ignored.com"
+      "HTTP_HOST" => "should-be-ignored.com",
     )
 
     assert_equal 200, resp.status
@@ -124,7 +124,7 @@ class DocumentationExtensionTest < Minitest::Test
 
   def test_host_includes_port_when_present
     resp = Rack::MockRequest.new(CustomMountPathAPI).get(
-      "http://example.com:8080/oas_schema?oas=2"
+      "http://example.com:8080/oas_schema?oas=2",
     )
 
     assert_equal 200, resp.status
@@ -137,7 +137,7 @@ class DocumentationExtensionTest < Minitest::Test
     resp = Rack::MockRequest.new(CustomMountPathAPI).get(
       "/oas_schema?oas=2",
       "HTTP_HOST" => "internal.example.com",
-      "HTTP_X_FORWARDED_HOST" => "public.example.com"
+      "HTTP_X_FORWARDED_HOST" => "public.example.com",
     )
 
     assert_equal 200, resp.status
@@ -159,7 +159,7 @@ class DocumentationExtensionTest < Minitest::Test
     add_oas_documentation(
       oas_mount_path: "/docs",
       host: ->(request) { request.host =~ /staging/ ? "staging-api.example.com" : "api.example.com" },
-      base_path: ->(request) { request.path_info.start_with?("/v2") ? "/v2" : "/v1" }
+      base_path: ->(request) { request.path_info.start_with?("/v2") ? "/v2" : "/v1" },
     )
   end
 
@@ -167,7 +167,7 @@ class DocumentationExtensionTest < Minitest::Test
     # Request to staging host
     resp = Rack::MockRequest.new(ProcHostAPI).get(
       "/docs?oas=2",
-      "HTTP_HOST" => "staging.internal.com"
+      "HTTP_HOST" => "staging.internal.com",
     )
 
     assert_equal 200, resp.status
@@ -180,7 +180,7 @@ class DocumentationExtensionTest < Minitest::Test
     # Request to production host
     resp = Rack::MockRequest.new(ProcHostAPI).get(
       "/docs?oas=2",
-      "HTTP_HOST" => "production.internal.com"
+      "HTTP_HOST" => "production.internal.com",
     )
 
     assert_equal 200, resp.status
@@ -198,7 +198,7 @@ class DocumentationExtensionTest < Minitest::Test
 
     add_oas_documentation(
       oas_mount_path: "/schema",
-      host: -> { "static-from-lambda.example.com" }
+      host: -> { "static-from-lambda.example.com" },
     )
   end
 

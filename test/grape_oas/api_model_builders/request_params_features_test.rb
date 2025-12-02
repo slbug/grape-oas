@@ -153,9 +153,9 @@ module GrapeOAS
 
         refute_nil logs_param
         # Extensions should be preserved on schema
-        if logs_param.schema.respond_to?(:extensions) && logs_param.schema.extensions
-          assert_equal "Log", logs_param.schema.extensions["x-name"]
-        end
+        skip unless logs_param.schema.respond_to?(:extensions) && logs_param.schema.extensions
+
+        assert_equal "Log", logs_param.schema.extensions["x-name"]
       end
 
       # === Additional Properties configurations ===
@@ -179,7 +179,7 @@ module GrapeOAS
 
         data_prop = body_schema.properties["data"]
 
-        assert_equal false, data_prop.additional_properties
+        refute data_prop.additional_properties
       end
 
       def test_hash_with_additional_properties_true
@@ -201,7 +201,7 @@ module GrapeOAS
 
         metadata_prop = body_schema.properties["metadata"]
 
-        assert_equal true, metadata_prop.additional_properties
+        assert metadata_prop.additional_properties
       end
 
       # === Enum values on parameters ===
@@ -225,7 +225,7 @@ module GrapeOAS
         status_param = params.find { |p| p.name == "status" }
         priority_param = params.find { |p| p.name == "priority" }
 
-        # Note: enum values handling depends on implementation
+        # NOTE: enum values handling depends on implementation
         refute_nil status_param
         refute_nil priority_param
       end

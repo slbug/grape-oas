@@ -48,6 +48,7 @@ module GrapeOAS
         schema = DryIntrospector.build(CatContract)
 
         parent_schema = schema.all_of[0]
+
         assert_equal PetContract.name, parent_schema.canonical_name
         assert_includes parent_schema.properties.keys, "pet_type"
         assert_includes parent_schema.properties.keys, "name"
@@ -57,6 +58,7 @@ module GrapeOAS
         schema = DryIntrospector.build(CatContract)
 
         child_schema = schema.all_of[1]
+
         assert_includes child_schema.properties.keys, "hunting_skill"
         refute_includes child_schema.properties.keys, "pet_type"
         refute_includes child_schema.properties.keys, "name"
@@ -69,6 +71,7 @@ module GrapeOAS
         assert_equal 2, schema.all_of.length
 
         child_schema = schema.all_of[1]
+
         assert_includes child_schema.properties.keys, "breed"
         assert_includes child_schema.properties.keys, "pack_size"
         refute_includes child_schema.properties.keys, "pet_type"
@@ -96,6 +99,7 @@ module GrapeOAS
         refute_nil schema.all_of
         # Should reference Animal (immediate parent)
         parent_schema = schema.all_of[0]
+
         assert_equal AnimalContract.name, parent_schema.canonical_name
       end
 
@@ -137,6 +141,7 @@ module GrapeOAS
         schema = DryIntrospector.build(RequiredChildContract)
 
         parent_schema = schema.all_of[0]
+
         assert_includes parent_schema.required, "required_field"
         refute_includes parent_schema.required, "optional_field"
       end
@@ -145,6 +150,7 @@ module GrapeOAS
         schema = DryIntrospector.build(RequiredChildContract)
 
         child_schema = schema.all_of[1]
+
         assert_includes child_schema.required, "child_required"
         refute_includes child_schema.required, "child_optional"
       end
@@ -161,6 +167,7 @@ module GrapeOAS
         schema = DryIntrospector.build(CatContract)
 
         parent_schema = schema.all_of[0]
+
         assert_equal PetContract.name, parent_schema.canonical_name
       end
     end

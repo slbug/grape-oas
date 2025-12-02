@@ -26,17 +26,15 @@ module GrapeOAS
 
         # Ensure examples is always an array and recurse into nested schemas
         def normalize_examples!(hash)
-          if hash.key?("examples") && !hash["examples"].is_a?(Array)
-            hash["examples"] = [hash["examples"]].compact
-          end
+          hash["examples"] = [hash["examples"]].compact if hash.key?("examples") && !hash["examples"].is_a?(Array)
 
           if hash.key?("properties") && hash["properties"].is_a?(Hash)
             hash["properties"].each_value { |v| normalize_examples!(v) if v.is_a?(Hash) }
           end
 
-          if hash.key?("items") && hash["items"].is_a?(Hash)
-            normalize_examples!(hash["items"])
-          end
+          return unless hash.key?("items") && hash["items"].is_a?(Hash)
+
+          normalize_examples!(hash["items"])
         end
       end
     end

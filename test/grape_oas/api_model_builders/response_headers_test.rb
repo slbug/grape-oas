@@ -29,6 +29,7 @@ module GrapeOAS
         responses = builder.build
 
         success_response = responses.find { |r| r.http_status == "200" }
+
         refute_nil success_response
         refute_empty success_response.headers
         assert_equal "X-Rate-Limit", success_response.headers.first[:name]
@@ -57,6 +58,7 @@ module GrapeOAS
         responses = builder.build
 
         success_response = responses.find { |r| r.http_status == "200" }
+
         refute_nil success_response
         assert_equal 3, success_response.headers.length
       end
@@ -82,10 +84,12 @@ module GrapeOAS
         responses = builder.build
 
         success_response = responses.find { |r| r.http_status == "200" }
+
         refute_nil success_response
         refute_empty success_response.headers
 
         header = success_response.headers.first
+
         assert_equal "X-Request-Id", header[:name]
         assert_equal "string", header[:schema]["type"]
       end
@@ -112,6 +116,7 @@ module GrapeOAS
 
         success_response = responses.find { |r| r.http_status == "200" }
         header = success_response.headers.first
+
         assert_equal "integer", header[:schema]["type"]
       end
 
@@ -140,10 +145,12 @@ module GrapeOAS
         responses = builder.build
 
         created_response = responses.find { |r| r.http_status == "201" }
+
         refute_nil created_response, "Should have 201 response"
         refute_empty created_response.headers
 
         header = created_response.headers.first
+
         assert_equal "Location", header[:name]
       end
 
@@ -163,6 +170,7 @@ module GrapeOAS
         responses = builder.build
 
         success_response = responses.find { |r| r.http_status == "200" }
+
         refute_nil success_response
         assert_empty success_response.headers
       end
@@ -190,10 +198,12 @@ module GrapeOAS
         responses = builder.build
 
         success_response = responses.find { |r| r.http_status == "200" }
+
         refute_nil success_response
         assert_equal 3, success_response.headers.length
 
         header_names = success_response.headers.map { |h| h[:name] }
+
         assert_includes header_names, "Cache-Control"
         assert_includes header_names, "ETag"
         assert_includes header_names, "Last-Modified"
@@ -221,6 +231,7 @@ module GrapeOAS
 
         success_response = responses.find { |r| r.http_status == "200" }
         header = success_response.headers.first
+
         assert_equal "Fallback description", header[:schema]["description"]
       end
 
@@ -246,6 +257,7 @@ module GrapeOAS
 
         success_response = responses.find { |r| r.http_status == "200" }
         header = success_response.headers.first
+
         assert_equal "integer", header[:schema]["type"]
         assert_equal "String keys", header[:schema]["description"]
       end

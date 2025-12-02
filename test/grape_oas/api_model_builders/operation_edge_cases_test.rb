@@ -196,6 +196,7 @@ module GrapeOAS
 
         # Should not raise
         op = builder.build
+
         refute_nil op
         refute_nil op.http_method
       end

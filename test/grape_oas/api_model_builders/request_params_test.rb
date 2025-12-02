@@ -270,7 +270,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :tags, type: Array[String], documentation: { param_type: "body" }
+            requires :tags, type: [String], documentation: { param_type: "body" }
           end
           post "items" do
             {}
@@ -291,7 +291,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            requires :ids, type: Array[Integer], documentation: { param_type: "body" }
+            requires :ids, type: [Integer], documentation: { param_type: "body" }
           end
           post "batch" do
             {}

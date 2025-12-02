@@ -40,10 +40,10 @@ module GrapeOAS
           # Resolve runtime options (like grape-swagger's OptionalObject)
           runtime_options = options.dup
           runtime_options[:host] = GrapeOAS::DocumentationExtension.resolve_option(
-            runtime_options[:host], request, :host_with_port
+            runtime_options[:host], request, :host_with_port,
           )
           runtime_options[:base_path] = GrapeOAS::DocumentationExtension.resolve_option(
-            runtime_options[:base_path], request, :script_name
+            runtime_options[:base_path], request, :script_name,
           )
 
           GrapeOAS.generate(app: api, schema_type: schema_type, **runtime_options)

@@ -13,9 +13,7 @@ module GrapeOAS
           return {} unless @schema
 
           # Handle allOf composition (for inheritance)
-          if @schema.all_of && !@schema.all_of.empty?
-            return build_all_of_schema
-          end
+          return build_all_of_schema if @schema.all_of && !@schema.all_of.empty?
 
           schema_hash = {
             "type" => @schema.type,

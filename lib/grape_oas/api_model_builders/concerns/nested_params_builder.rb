@@ -6,7 +6,6 @@ module GrapeOAS
       # Reconstructs nested parameter structures from Grape's flat bracket notation.
       # Grape exposes nested params as flat keys like "address[street]", "address[city]".
       # This module converts them back to proper nested schemas.
-      # rubocop:disable Metrics/ModuleLength
       module NestedParamsBuilder
         BRACKET_PATTERN = /\[([^\]]+)\]/
 
@@ -118,35 +117,18 @@ module GrapeOAS
         # Builds a hash/object schema with nested properties.
         def build_hash_with_children(parent_spec, nested_children)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-
-          # Process nested children which may themselves be nested
-          flat_for_recursion = unflatten_one_level(nested_children)
-          top_level, deeply_nested = partition_params(flat_for_recursion)
+          top_level, deeply_nested = partition_params(nested_children)
           nested_groups = group_nested_params(deeply_nested)
 
           top_level.each do |name, spec|
-            child_schema = if nested_groups.key?(name)
-                             build_nested_children(spec, nested_groups[name])
-                           else
-                             build_schema_for_spec(spec)
-                           end
-
-            required = spec[:required] || false
-            schema.add_property(name, child_schema, required: required)
+            child_schema = nested_groups.key?(name) ? build_nested_children(spec, nested_groups[name]) : build_schema_for_spec(spec)
+            schema.add_property(name, child_schema, required: spec[:required] || false)
           end
 
           apply_documentation_extensions(schema, parent_spec)
           schema
         end
 
-        # Converts nested_children hash to flat format for recursion.
-        # { "street" => spec1, "city[zip]" => spec2 } stays as is
-        def unflatten_one_level(nested_children)
-          nested_children
-        end
-
-        # Applies any documentation extensions from parent spec.
-        # rubocop:disable Metrics/AbcSize
         def apply_documentation_extensions(schema, parent_spec)
           doc = parent_spec[:documentation] || {}
           schema.description = doc[:desc] if doc[:desc]
@@ -167,7 +149,6 @@ module GrapeOAS
           # Apply example
           schema.examples = doc[:example] if doc[:example] && schema.respond_to?(:examples=)
         end
-        # rubocop:enable Metrics/AbcSize
 
         # Checks if a param is explicitly marked as NOT a body param (e.g., query, header).
         def explicit_non_body_param?(spec)
@@ -184,7 +165,6 @@ module GrapeOAS
             spec[:type] == Hash
         end
       end
-      # rubocop:enable Metrics/ModuleLength
     end
   end
 end

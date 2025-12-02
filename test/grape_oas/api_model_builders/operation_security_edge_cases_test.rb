@@ -82,7 +82,7 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route)
         op = builder.build
 
-        assert_equal [], op.security
+        assert_empty op.security
       end
 
       # === Security with symbol keys ===
@@ -133,7 +133,7 @@ module GrapeOAS
           desc "Complex mixed security",
                documentation: {
                  security: [
-                   { api_key: [], basic_auth: [] },    # Requires both
+                   { api_key: [], basic_auth: [] }, # Requires both
                    { oauth2: %w[read write] },          # OR OAuth2 with scopes
                    { bearer_token: [] }                 # OR bearer token
                  ]
@@ -177,7 +177,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           desc "OIDC security",
-               documentation: { security: [{ openIdConnect: ["openid", "profile"] }] }
+               documentation: { security: [{ openIdConnect: %w[openid profile] }] }
           get "oidc_auth" do
             {}
           end
@@ -187,7 +187,7 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route)
         op = builder.build
 
-        assert_equal [{ openIdConnect: ["openid", "profile"] }], op.security
+        assert_equal [{ openIdConnect: %w[openid profile] }], op.security
       end
 
       # === Nil security (gets converted to empty array) ===
@@ -206,7 +206,7 @@ module GrapeOAS
         op = builder.build
 
         # nil gets converted to empty array (same as explicitly public)
-        assert_equal [], op.security
+        assert_empty op.security
       end
     end
   end

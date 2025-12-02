@@ -22,9 +22,7 @@ module GrapeOAS
 
         # Check for inheritance with discriminator - use allOf for polymorphism
         parent_entity = find_parent_entity
-        if parent_entity && parent_has_discriminator?(parent_entity)
-          return build_inherited_schema(parent_entity)
-        end
+        return build_inherited_schema(parent_entity) if parent_entity && parent_has_discriminator?(parent_entity)
 
         # Build (or reuse placeholder) for this entity
         schema = (@registry[@entity_class] ||= ApiModel::Schema.new(
@@ -106,50 +104,49 @@ module GrapeOAS
         []
       end
 
-      # rubocop:disable Metrics/AbcSize
       def schema_for_exposure(exposure, doc)
         opts = exposure.instance_variable_get(:@options) || {}
         type = doc[:type] || doc["type"] || opts[:using]
-        nullable = doc[:nullable] || doc["nullable"] || false
-        enum = doc[:values] || doc["values"]
-        desc = doc[:desc] || doc["desc"]
-        fmt  = doc[:format] || doc["format"]
-        example = doc[:example] || doc["example"]
-        x_ext = doc.select { |k, _| k.to_s.start_with?("x-") }
 
-        schema = case type
-                 when Array
-                   inner = schema_for_type(type.first)
-                   ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
-                 when Hash
-                   ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-                 else
-                   schema_for_type(type)
-                 end
-        schema ||= ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-        schema.nullable = nullable
-        schema.enum = enum if enum
-        schema.description = desc if desc
-        schema.format = fmt if fmt
-        schema.examples = example if schema.respond_to?(:examples=) && example
+        schema = build_exposure_base_schema(type)
+        apply_exposure_properties(schema, doc)
+        apply_exposure_constraints(schema, doc)
+        schema
+      end
+
+      def build_exposure_base_schema(type)
+        case type
+        when Array
+          inner = schema_for_type(type.first)
+          ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
+        when Hash
+          ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        else
+          schema_for_type(type) || ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        end
+      end
+
+      def apply_exposure_properties(schema, doc)
+        schema.nullable = doc[:nullable] || doc["nullable"] || false
+        schema.enum = doc[:values] || doc["values"] if doc[:values] || doc["values"]
+        schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
+        schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
+        schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
         schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
         schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
         defs = doc[:defs] || doc[:$defs]
         schema.defs = defs if defs.is_a?(Hash)
+        x_ext = doc.select { |k, _| k.to_s.start_with?("x-") }
         schema.extensions = x_ext if x_ext.any? && schema.respond_to?(:extensions=)
+      end
 
-        # Apply numeric constraints
+      def apply_exposure_constraints(schema, doc)
         schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
         schema.maximum = doc[:maximum] if doc.key?(:maximum) && schema.respond_to?(:maximum=)
-
-        # Apply string constraints
         schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
         schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
         schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
-
-        schema
       end
-      # rubocop:enable Metrics/AbcSize
 
       def exposed?(exposure)
         conditions = exposure.instance_variable_get(:@conditions) || []
@@ -275,7 +272,7 @@ module GrapeOAS
         # Create allOf schema with ref to parent + child properties
         schema = ApiModel::Schema.new(
           canonical_name: @entity_class.name,
-          all_of: [parent_schema, child_schema]
+          all_of: [parent_schema, child_schema],
         )
 
         @registry[@entity_class] = schema

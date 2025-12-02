@@ -46,10 +46,12 @@ module GrapeOAS
 
         # First item should be parent ref
         parent_schema = schema.all_of[0]
+
         assert_equal Pet.name, parent_schema.canonical_name
 
         # Second item should be child-specific properties
         child_schema = schema.all_of[1]
+
         assert_includes child_schema.properties.keys, "hunting_skill"
         refute_includes child_schema.properties.keys, "type"
         refute_includes child_schema.properties.keys, "name"
@@ -62,6 +64,7 @@ module GrapeOAS
         assert_equal 2, schema.all_of.length
 
         child_schema = schema.all_of[1]
+
         assert_includes child_schema.properties.keys, "breed"
         assert_includes child_schema.properties.keys, "pack_size"
       end
@@ -87,6 +90,7 @@ module GrapeOAS
         refute_nil schema.all_of
         # Should reference Animal (parent with discriminator)
         parent_schema = schema.all_of[0]
+
         assert_equal Animal.name, parent_schema.canonical_name
       end
 

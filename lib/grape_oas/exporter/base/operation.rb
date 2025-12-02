@@ -39,11 +39,11 @@ module GrapeOAS
           # Fallback: generate a readable summary from the operationId to satisfy lint rules
           if summary.nil? && @op.operation_id
             summary = @op.operation_id
-                      .to_s
-                      .tr("_", " ")
-                      .split
-                      .map { |w| w.capitalize }
-                      .join(" ")
+                         .to_s
+                         .tr("_", " ")
+                         .split
+                         .map(&:capitalize)
+                         .join(" ")
           end
 
           {
