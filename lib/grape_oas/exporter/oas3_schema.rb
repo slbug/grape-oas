@@ -93,6 +93,11 @@ module GrapeOAS
         pending = @ref_tracker ? @ref_tracker.to_a : []
         processed = Set.new
 
+        # Add pre-registered models to pending
+        Array(@api.registered_schemas).each do |schema|
+          pending << schema.canonical_name if schema.respond_to?(:canonical_name) && schema.canonical_name
+        end
+
         until pending.empty?
           canonical_name = pending.shift
           next if processed.include?(canonical_name)
@@ -144,10 +149,15 @@ module GrapeOAS
 
       def build_schema_index
         index = {}
+        # Index schemas from operations
         @api.paths.each do |path|
           path.operations.each do |op|
             collect_schemas_from_operation(op, index)
           end
+        end
+        # Index pre-registered models
+        Array(@api.registered_schemas).each do |schema|
+          index_schema(schema, index)
         end
         index
       end

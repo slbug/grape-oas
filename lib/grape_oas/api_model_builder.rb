@@ -17,6 +17,7 @@ module GrapeOAS
       @api.security = options[:security] || []
       @api.tag_defs.merge(Array(options[:tags])) if options[:tags]
       @api.servers = build_servers(options)
+      @api.registered_schemas = build_registered_schemas(options[:models])
 
       @apis = []
     end
@@ -42,6 +43,19 @@ module GrapeOAS
       scheme = Array(options[:schemes]).compact.first || "https"
       url = "#{scheme}://#{options[:host]}#{normalize_base_path(options[:base_path])}"
       [{ "url" => url }]
+    end
+
+    # Build schemas from pre-registered models (entities/contracts)
+    # This allows adding models to definitions even if not referenced by endpoints
+    def build_registered_schemas(models)
+      return [] unless models
+
+      Array(models).map do |model|
+        model = model.constantize if model.is_a?(String)
+        GrapeOAS::Introspectors::EntityIntrospector.new(model).build_schema
+      rescue StandardError
+        nil
+      end.compact
     end
   end
 end

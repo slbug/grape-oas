@@ -12,7 +12,8 @@ module GrapeOAS
     # @see GrapeOAS::ApiModel::Path
     class API < Node
       attr_accessor :title, :version, :paths, :servers, :tag_defs, :components,
-                    :host, :base_path, :schemes, :security_definitions, :security
+                    :host, :base_path, :schemes, :security_definitions, :security,
+                    :registered_schemas
 
       def initialize(title:, version:)
         super()
@@ -27,6 +28,7 @@ module GrapeOAS
         @schemes    = []
         @security_definitions = {}
         @security = []
+        @registered_schemas = []
       end
 
       def add_path(path)
