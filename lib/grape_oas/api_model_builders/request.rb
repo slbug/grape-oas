@@ -143,7 +143,11 @@ module GrapeOAS
       def map_type(value)
         return value.primitive.to_s.downcase if value.respond_to?(:primitive)
 
-        Constants::RUBY_TYPE_MAPPING.fetch(value, Constants::SchemaTypes::STRING)
+        # First try direct lookup (for Ruby class values like String, Integer)
+        # Then try class-based lookup (for actual runtime values like "hello", 123)
+        Constants::RUBY_TYPE_MAPPING.fetch(value) do
+          Constants::RUBY_TYPE_MAPPING.fetch(value.class, Constants::SchemaTypes::STRING)
+        end
       end
 
       def schema_from_types(types_hash, rule_constraints)

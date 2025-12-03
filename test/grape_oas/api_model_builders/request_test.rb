@@ -290,6 +290,29 @@ module GrapeOAS
         assert_nil operation.request_body, "DELETE should not have request body by default"
       end
 
+      def test_hash_to_schema_infers_type_from_runtime_values
+        # Contract with actual runtime values (not Ruby classes)
+        contract = Struct.new(:to_h).new({
+                                           name: "John",
+                                           age: 42,
+                                           price: 99.99,
+                                           active: true,
+                                           disabled: false
+                                         })
+        route = DummyRoute.new({ contract: contract, params: {} }, "/items", {})
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        schema = operation.request_body.media_types.first.schema
+
+        assert_equal "string", schema.properties["name"].type
+        assert_equal "integer", schema.properties["age"].type
+        assert_equal "number", schema.properties["price"].type
+        assert_equal "boolean", schema.properties["active"].type
+        assert_equal "boolean", schema.properties["disabled"].type
+      end
+
       def test_request_body_for_get_when_explicitly_allowed
         contract = Struct.new(:to_h).new({ query: String })
         route = DummyRoute.new(
