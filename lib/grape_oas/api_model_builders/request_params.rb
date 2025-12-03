@@ -118,6 +118,9 @@ module GrapeOAS
       end
 
       def extract_location(spec:)
+        # If body_name is set on the route, treat non-path params as body by default
+        return "body" if route.options[:body_name] && !spec.dig(:documentation, :param_type)
+
         spec.dig(:documentation, :param_type)&.downcase || "query"
       end
 

@@ -73,12 +73,7 @@ module GrapeOAS
 
         def build_body_parameter(request_body)
           schema = build_body_schema(request_body)
-          canonical = begin
-            request_body&.media_types&.first&.schema&.canonical_name
-          rescue NoMethodError
-            nil
-          end
-          name = canonical ? canonical.gsub("::", "_") : "body"
+          name = derive_body_name(request_body)
           {
             "name" => name,
             "in" => "body",
@@ -86,6 +81,19 @@ module GrapeOAS
             "description" => request_body.description,
             "schema" => schema
           }.compact
+        end
+
+        def derive_body_name(request_body)
+          # Use explicit body_name if provided
+          return request_body.body_name if request_body.respond_to?(:body_name) && request_body.body_name
+
+          # Fall back to canonical name from schema
+          canonical = begin
+            request_body&.media_types&.first&.schema&.canonical_name
+          rescue NoMethodError
+            nil
+          end
+          canonical ? canonical.gsub("::", "_") : "body"
         end
 
         def build_body_schema(request_body)

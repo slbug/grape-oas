@@ -64,6 +64,7 @@ module GrapeOAS
           required: body_schema.required && !body_schema.required.empty?,
           media_types: media_types,
           extensions: request_body_extensions,
+          body_name: route.options[:body_name],
         )
       end
 
