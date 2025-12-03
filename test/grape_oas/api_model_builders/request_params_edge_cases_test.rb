@@ -348,6 +348,33 @@ module GrapeOAS
         refute_nil data.items, "Plain Array should have items schema"
         assert_equal "string", data.items.type, "Default items type should be string"
       end
+
+      # === Entity constant resolution safety (Issue #13) ===
+
+      def test_resolve_entity_class_handles_unloaded_nested_constant
+        # Test that resolve_entity_class handles nested constants gracefully
+        # when parent modules aren't loaded (e.g. "UnloadedModule::V1::UserEntity")
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Use a nested constant that doesn't exist - should fall back gracefully
+            requires :data, type: "NonExistent::Module::Entity", documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+
+        # Should not raise NameError - should fall back to string type
+        body_schema, _params = builder.build
+
+        data = body_schema.properties["data"]
+
+        assert_equal "string", data.type, "Should fall back to string for unresolvable entity"
+      end
     end
   end
 end
