@@ -57,6 +57,8 @@ module GrapeOAS
   # @option options [Array<String>] :servers Server URLs (OAS3 only)
   # @option options [Hash] :license License information
   # @option options [Hash] :security_definitions Security scheme definitions
+  # @option options [String] :namespace Filter routes to only include paths
+  #   starting with this namespace (e.g., "users" includes /users and /users/{id})
   #
   # @return [Hash] The OpenAPI specification as a Hash (JSON-serializable)
   #
@@ -70,6 +72,10 @@ module GrapeOAS
   #     title: "My API",
   #     version: "1.0.0"
   #   )
+  #
+  # @example Filter by namespace
+  #   schema = GrapeOAS.generate(app: MyAPI, namespace: "users")
+  #   # Only includes paths like /users, /users/{id}, etc.
   #
   def generate(app:, schema_type: :oas3, **options)
     api_model = GrapeOAS::ApiModelBuilder.new(options)

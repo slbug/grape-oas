@@ -19,12 +19,13 @@ module GrapeOAS
       @api.servers = build_servers(options)
       @api.registered_schemas = build_registered_schemas(options[:models])
 
+      @namespace_filter = options[:namespace]
       @apis = []
     end
 
     def add_app(app)
       GrapeOAS::ApiModelBuilders::Path
-        .new(api: @api, routes: app.routes, app: app)
+        .new(api: @api, routes: app.routes, app: app, namespace_filter: @namespace_filter)
         .build
     end
 

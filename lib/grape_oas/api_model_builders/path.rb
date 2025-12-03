@@ -13,12 +13,13 @@ module GrapeOAS
       NORMALIZED_PLACEHOLDER = /\{[^}]+\}/
       private_constant :NORMALIZED_PLACEHOLDER
 
-      attr_reader :api, :routes, :app
+      attr_reader :api, :routes, :app, :namespace_filter
 
-      def initialize(api:, routes:, app: nil)
+      def initialize(api:, routes:, app: nil, namespace_filter: nil)
         @api = api
         @routes = routes
         @app = app
+        @namespace_filter = namespace_filter
       end
 
       def build
@@ -58,6 +59,8 @@ module GrapeOAS
       private
 
       def skip_route?(route)
+        return true if filtered_by_namespace?(route)
+
         # Check route_setting :swagger, hidden: true
         route_hidden = route.settings.dig(:swagger, :hidden)
         # Check desc "...", swagger: { hidden: true }
@@ -69,6 +72,21 @@ module GrapeOAS
         route_hidden = route_hidden.call if route_hidden.respond_to?(:call)
 
         route_hidden
+      end
+
+      # Returns true if route should be filtered out due to namespace filter.
+      # Routes are included if their path matches the namespace exactly or starts with namespace followed by "/".
+      def filtered_by_namespace?(route)
+        return false unless namespace_filter
+
+        route_path = sanitize_path(route.path)
+        namespace_prefix = namespace_filter.start_with?("/") ? namespace_filter : "/#{namespace_filter}"
+
+        # Match exact namespace or namespace followed by / or {
+        return false if route_path == namespace_prefix
+        return false if route_path.start_with?("#{namespace_prefix}/")
+
+        true
       end
 
       def build_operation(route, path_param_name_map: nil, template_override: nil)

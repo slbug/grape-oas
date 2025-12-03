@@ -22,6 +22,7 @@ OpenAPI Specification (OAS) documentation generator for [Grape](https://github.c
   - [Info Object](#info-object)
   - [Security Definitions](#security-definitions)
   - [Tags](#tags)
+  - [Namespace Filtering](#namespace-filtering)
 - [Documenting Endpoints](#documenting-endpoints)
   - [Basic Documentation](#basic-documentation)
   - [Request Parameters](#request-parameters)
@@ -208,6 +209,7 @@ add_oas_documentation(
 
   # Filtering
   models: [Entity::User, Entity::Post], # Pre-register entities
+  namespace: 'users',                 # Filter to specific namespace
   tags: [                             # Tag definitions
     { name: 'users', description: 'User operations' },
     { name: 'posts', description: 'Post operations' }
@@ -311,6 +313,30 @@ add_oas_documentation(
   ]
 )
 ```
+
+### Namespace Filtering
+
+Generate documentation for only a subset of your API by filtering to a specific namespace:
+
+```ruby
+# Only include paths starting with /users
+GrapeOAS.generate(app: API, schema_type: :oas3, namespace: 'users')
+# Includes: /users, /users/{id}, /users/posts, /users/posts/{id}
+# Excludes: /posts, /comments, /
+
+# Filter to nested namespace
+GrapeOAS.generate(app: API, schema_type: :oas3, namespace: 'users/posts')
+# Includes: /users/posts, /users/posts/{id}
+# Excludes: /users, /users/{id}, /users/comments
+
+# Works with or without leading slash
+GrapeOAS.generate(app: API, namespace: '/users')  # Same as 'users'
+```
+
+This is useful for:
+- Generating separate documentation for different API sections
+- Creating focused documentation for specific consumers
+- Reducing documentation size for large APIs
 
 ## Documenting Endpoints
 
