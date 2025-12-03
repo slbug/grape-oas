@@ -36,7 +36,9 @@ module GrapeOAS
       end
 
       def build
-        response_specs.map { |spec| build_response_from_spec(spec) }
+        specs = response_specs
+        grouped = group_specs_by_status(specs)
+        grouped.map { |_code, group_specs| build_response_from_group(group_specs) }
       end
 
       private
@@ -50,6 +52,77 @@ module GrapeOAS
 
       def parsers
         @parsers ||= self.class.parsers.map(&:new)
+      end
+
+      # Groups specs by status code to support multiple present responses
+      def group_specs_by_status(specs)
+        specs.group_by { |s| s[:code].to_s }
+      end
+
+      # Builds a response from a group of specs with the same status code
+      # If multiple specs have `as:` keys, they are merged into a single object schema
+      def build_response_from_group(group_specs)
+        if group_specs.any? { |s| s[:as] }
+          build_merged_response(group_specs)
+        else
+          build_response_from_spec(group_specs.first)
+        end
+      end
+
+      # Builds a merged response for multiple present with `as:` keys
+      def build_merged_response(specs)
+        first_spec = specs.first
+        schema = build_merged_schema(specs)
+        media_types = Array(response_content_types).map do |mime|
+          build_media_type(mime_type: mime, schema: schema)
+        end
+
+        description = first_spec[:message].is_a?(String) ? first_spec[:message] : first_spec[:message].to_s
+
+        GrapeOAS::ApiModel::Response.new(
+          http_status: first_spec[:code].to_s,
+          description: description || "Success",
+          media_types: media_types,
+          headers: normalize_headers(first_spec[:headers]) || headers_from_route,
+          extensions: first_spec[:extensions] || extensions_from_route,
+          examples: merge_examples(specs),
+        )
+      end
+
+      # Builds an object schema with properties from each `as:` keyed spec
+      def build_merged_schema(specs)
+        properties = {}
+        required = []
+
+        specs.each do |spec|
+          key = spec[:as].to_s
+          entity_schema = build_schema(spec[:entity])
+
+          properties[key] = if spec[:is_array]
+                              GrapeOAS::ApiModel::Schema.new(
+                                type: Constants::SchemaTypes::ARRAY,
+                                items: entity_schema,
+                              )
+                            else
+                              entity_schema
+                            end
+
+          required << key if spec[:required]
+        end
+
+        GrapeOAS::ApiModel::Schema.new(
+          type: Constants::SchemaTypes::OBJECT,
+          properties: properties,
+          required: required.empty? ? nil : required,
+        )
+      end
+
+      # Merges examples from multiple specs
+      def merge_examples(specs)
+        examples = specs.map { |s| s[:examples] }.compact
+        return nil if examples.empty?
+
+        examples.reduce({}, :merge)
       end
 
       def build_response_from_spec(spec)

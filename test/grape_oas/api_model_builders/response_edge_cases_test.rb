@@ -244,6 +244,136 @@ module GrapeOAS
         assert_includes schema_404.properties.keys, "code"
         assert_includes schema_404.properties.keys, "message"
       end
+
+      # === Multiple Present Response Tests ===
+
+      class UserEntity < Grape::Entity
+        expose :id, documentation: { type: Integer }
+        expose :email, documentation: { type: String }
+      end
+
+      class ProfileEntity < Grape::Entity
+        expose :bio, documentation: { type: String }
+        expose :avatar_url, documentation: { type: String }
+      end
+
+      def test_multiple_present_response_with_as_keys
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get user with profile",
+               success: [
+                 { model: ResponseEdgeCasesTest::UserEntity, as: :user },
+                 { model: ResponseEdgeCasesTest::ProfileEntity, as: :profile }
+               ]
+          get "users/:id/full" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        # Should have single 200 response with merged schema
+        assert_equal 1, responses.size
+        response = responses.first
+
+        assert_equal "200", response.http_status
+        schema = response.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_includes schema.properties.keys, "user"
+        assert_includes schema.properties.keys, "profile"
+      end
+
+      def test_multiple_present_response_with_is_array
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get user with items",
+               success: [
+                 { model: ResponseEdgeCasesTest::UserEntity, as: :user },
+                 { model: ResponseEdgeCasesTest::ItemEntity, as: :items, is_array: true }
+               ]
+          get "users/:id/with-items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_equal "object", schema.type
+
+        # user should be a direct entity reference
+        user_schema = schema.properties["user"]
+
+        refute_nil user_schema
+
+        # items should be an array
+        items_schema = schema.properties["items"]
+
+        assert_equal "array", items_schema.type
+        refute_nil items_schema.items
+      end
+
+      def test_multiple_present_response_with_required
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get user with items",
+               success: [
+                 { model: ResponseEdgeCasesTest::UserEntity, as: :user, required: true },
+                 { model: ResponseEdgeCasesTest::ItemEntity, as: :items, is_array: true }
+               ]
+          get "users/:id/required" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_equal ["user"], schema.required
+      end
+
+      def test_multiple_present_response_merges_same_status
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get combined data",
+               success: [
+                 { code: 200, model: ResponseEdgeCasesTest::UserEntity, as: :user },
+                 { code: 200, model: ResponseEdgeCasesTest::ProfileEntity, as: :profile },
+                 { code: 200, model: ResponseEdgeCasesTest::ItemEntity, as: :items, is_array: true, required: true }
+               ]
+          get "combined" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        # Should merge into a single response
+        assert_equal 1, responses.size
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_equal 3, schema.properties.size
+        assert_includes schema.properties.keys, "user"
+        assert_includes schema.properties.keys, "profile"
+        assert_includes schema.properties.keys, "items"
+        assert_equal ["items"], schema.required
+      end
     end
   end
 end

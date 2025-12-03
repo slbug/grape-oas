@@ -50,7 +50,10 @@ module GrapeOAS
             message: extract_description(entry),
             entity: extract_entity(entry, route.options[:entity]),
             headers: entry[:headers],
-            examples: entry[:examples]
+            examples: entry[:examples],
+            as: entry[:as],
+            is_array: entry[:is_array],
+            required: entry[:required]
           }
         end
 

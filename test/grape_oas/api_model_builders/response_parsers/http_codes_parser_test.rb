@@ -220,6 +220,45 @@ module GrapeOAS
           assert_equal({ "application/json" => { error: "invalid" } }, specs[0][:examples])
         end
 
+        def test_parses_as_key_for_multiple_present
+          route = mock_route(
+            success: [
+              { model: "UserEntity", as: :user },
+              { model: "ProfileEntity", as: :profile }
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 2, specs.size
+          assert_equal :user, specs[0][:as]
+          assert_equal :profile, specs[1][:as]
+        end
+
+        def test_parses_is_array_option
+          route = mock_route(
+            success: [
+              { model: "ItemEntity", as: :items, is_array: true }
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert specs[0][:is_array]
+        end
+
+        def test_parses_required_option
+          route = mock_route(
+            success: [
+              { model: "ItemEntity", as: :items, required: true }
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert specs[0][:required]
+        end
+
         private
 
         def mock_route(options = {})
