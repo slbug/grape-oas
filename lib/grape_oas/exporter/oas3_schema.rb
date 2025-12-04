@@ -1,8 +1,14 @@
 # frozen_string_literal: true
 
+require_relative "concerns/tag_builder"
+require_relative "concerns/schema_indexer"
+
 module GrapeOAS
   module Exporter
     class OAS3Schema
+      include Concerns::TagBuilder
+      include Concerns::SchemaIndexer
+
       def initialize(api_model:)
         @api = api_model
         @ref_tracker = Set.new
@@ -58,50 +64,6 @@ module GrapeOAS
         servers
       end
 
-      def build_tags
-        used_tag_names = collect_used_tag_names
-        seen_names = Set.new
-        tags = Array(@api.tag_defs).filter_map do |tag|
-          normalized = normalize_tag(tag)
-          tag_name = normalized["name"]
-          # Only include tags that are actually used by operations and not already seen
-          next if seen_names.include?(tag_name) || !used_tag_names.include?(tag_name)
-
-          seen_names << tag_name
-          normalized
-        end
-        tags.empty? ? nil : tags
-      end
-
-      def normalize_tag(tag)
-        if tag.is_a?(Hash)
-          # Convert symbol keys to string keys
-          tag.transform_keys(&:to_s)
-        elsif tag.respond_to?(:name)
-          h = { "name" => tag.name.to_s }
-          h["description"] = tag.description if tag.respond_to?(:description)
-          h
-        else
-          name = tag.to_s
-          desc = if defined?(ActiveSupport::Inflector)
-                   "Operations about #{ActiveSupport::Inflector.pluralize(name)}"
-                 else
-                   "Operations about #{name}s"
-                 end
-          { "name" => name, "description" => desc }
-        end
-      end
-
-      def collect_used_tag_names
-        used_tags = Set.new
-        @api.paths.each do |path|
-          path.operations.each do |op|
-            Array(op.tag_names).each { |t| used_tags << t }
-          end
-        end
-        used_tags
-      end
-
       def build_components
         schemas = build_schemas
         security_schemes = build_security_schemes
@@ -131,7 +93,7 @@ module GrapeOAS
           schema = find_schema_by_canonical_name(canonical_name)
           if schema
             schemas[ref_name] =
-              OAS3::Schema.new(schema, @ref_tracker, nullable_keyword: nullable_keyword?).build
+              schema_builder.new(schema, @ref_tracker, nullable_keyword: nullable_keyword?).build
           end
           collect_refs(schema, pending) if schema
 
@@ -160,88 +122,6 @@ module GrapeOAS
 
       def nullable_keyword?
         true
-      end
-
-      def find_schema_by_canonical_name(canonical_name)
-        @ref_schemas[canonical_name] || schema_index[canonical_name]
-      end
-
-      def schema_index
-        @schema_index ||= build_schema_index
-      end
-
-      def build_schema_index
-        index = {}
-        # Index schemas from operations
-        @api.paths.each do |path|
-          path.operations.each do |op|
-            collect_schemas_from_operation(op, index)
-          end
-        end
-        # Index pre-registered models
-        Array(@api.registered_schemas).each do |schema|
-          index_schema(schema, index)
-        end
-        index
-      end
-
-      def collect_schemas_from_operation(operation, index)
-        Array(operation.parameters).each do |param|
-          index_schema(param.schema, index)
-        end
-
-        if operation.request_body
-          Array(operation.request_body.media_types).each do |media_type|
-            index_schema(media_type.schema, index)
-          end
-        end
-
-        Array(operation.responses).each do |resp|
-          Array(resp.media_types).each do |media_type|
-            index_schema(media_type.schema, index)
-          end
-        end
-      end
-
-      def index_schema(schema, index)
-        return unless schema.respond_to?(:canonical_name) && schema.canonical_name
-
-        index[schema.canonical_name] ||= schema
-      end
-
-      def collect_refs(schema, pending, seen = Set.new)
-        return unless schema
-
-        if schema.respond_to?(:canonical_name) && schema.canonical_name
-          return if seen.include?(schema.canonical_name)
-
-          seen << schema.canonical_name
-          @ref_schemas[schema.canonical_name] ||= schema
-        end
-
-        if schema.respond_to?(:properties) && schema.properties
-          schema.properties.each_value do |prop|
-            if prop.respond_to?(:canonical_name) && prop.canonical_name
-              pending << prop.canonical_name
-              @ref_schemas[prop.canonical_name] ||= prop
-            end
-            collect_refs(prop, pending, seen)
-          end
-        end
-        collect_refs(schema.items, pending, seen) if schema.respond_to?(:items) && schema.items
-
-        # Handle allOf/oneOf/anyOf composition (for inheritance/polymorphism)
-        %i[all_of one_of any_of].each do |composition_type|
-          next unless schema.respond_to?(composition_type) && schema.send(composition_type)
-
-          schema.send(composition_type).each do |sub_schema|
-            if sub_schema.respond_to?(:canonical_name) && sub_schema.canonical_name
-              pending << sub_schema.canonical_name
-              @ref_schemas[sub_schema.canonical_name] ||= sub_schema
-            end
-            collect_refs(sub_schema, pending, seen)
-          end
-        end
       end
     end
   end

@@ -10,8 +10,6 @@ module GrapeOAS
           "3.1.0"
         end
 
-        private
-
         def build
           hash = super
 
@@ -23,6 +21,8 @@ module GrapeOAS
           normalize_examples!(hash)
           hash
         end
+
+        private
 
         # Ensure examples is always an array and recurse into nested schemas
         def normalize_examples!(hash)
