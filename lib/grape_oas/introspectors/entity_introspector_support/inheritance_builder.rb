@@ -39,7 +39,7 @@ module GrapeOAS
         # @return [ApiModel::Schema] the composed schema
         def build_inherited_schema(parent_entity)
           # First, ensure parent schema is built
-          parent_schema = EntityIntrospector.new(parent_entity, stack: @stack, registry: @registry).build_schema
+          parent_schema = GrapeOAS.introspectors.build_schema(parent_entity, stack: @stack, registry: @registry)
 
           # Build child-specific properties (excluding inherited ones)
           child_schema = build_child_only_schema(parent_entity)

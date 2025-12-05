@@ -28,11 +28,16 @@ module GrapeOAS
           end
         end
 
-        # Gets canonical name only for proper Contract classes (not Dry::Schema objects).
+        # Gets canonical name for contracts and schemas.
+        # - For Dry::Validation::Contract: uses class name
+        # - For Dry::Schema with schema_name: uses the defined schema_name
         #
         # @return [String, nil] the canonical name or nil
         def canonical_name
           return contract_class.name if validation_contract?
+
+          # Check for schema_name on Dry::Schema objects
+          return @contract.schema_name if @contract.respond_to?(:schema_name) && @contract.schema_name
 
           nil
         end

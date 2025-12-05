@@ -59,13 +59,23 @@ module GrapeOAS
           end
 
           # Applies values from spec[:values] - converts Range to min/max,
-          # evaluates Proc, and sets enum for arrays.
+          # evaluates Proc (arity 0), and sets enum for arrays.
+          # Skips Proc/Lambda validators (arity > 0) used for custom validation.
           def apply_values(schema, spec)
             values = spec[:values]
             return unless values
 
-            # Evaluate Proc if provided
-            values = values.call if values.respond_to?(:call)
+            # Handle Hash format { value: ..., message: ... } - extract the value
+            values = values[:value] if values.is_a?(Hash) && values.key?(:value)
+
+            # Handle Proc/Lambda
+            if values.respond_to?(:call)
+              # Skip validators (arity > 0) - they validate individual values
+              return if values.arity != 0
+
+              # Evaluate arity-0 procs - they return enum arrays
+              values = values.call
+            end
 
             if values.is_a?(Range)
               apply_range_values(schema, values)
@@ -77,15 +87,16 @@ module GrapeOAS
           # Converts a Range to minimum/maximum constraints.
           # For numeric ranges (Integer, Float), uses min/max.
           # For other ranges (e.g., 'a'..'z'), expands to enum array.
+          # Handles endless/beginless ranges (e.g., 1.., ..10).
           def apply_range_values(schema, range)
-            first_val = range.first
-            last_val = range.last
+            first_val = range.begin
+            last_val = range.end
 
-            if first_val.is_a?(Numeric)
-              schema.minimum = first_val if schema.respond_to?(:minimum=)
-              schema.maximum = last_val if schema.respond_to?(:maximum=)
-            elsif schema.respond_to?(:enum=)
-              # Non-numeric range (e.g., 'a'..'z') - expand to enum
+            if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+              schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
+              schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+            elsif first_val && last_val && schema.respond_to?(:enum=)
+              # Non-numeric bounded range (e.g., 'a'..'z') - expand to enum
               schema.enum = range.to_a
             end
           end

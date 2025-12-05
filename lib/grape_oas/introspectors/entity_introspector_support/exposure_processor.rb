@@ -194,7 +194,7 @@ module GrapeOAS
 
         def schema_for_class_type(type)
           if defined?(Grape::Entity) && type <= Grape::Entity
-            EntityIntrospector.new(type, stack: @stack, registry: @registry).build_schema
+            GrapeOAS.introspectors.build_schema(type, stack: @stack, registry: @registry)
           else
             build_schema_for_primitive(type) || default_string_schema
           end
@@ -203,7 +203,7 @@ module GrapeOAS
         def schema_for_string_type(type_name)
           entity_class = resolve_entity_from_string(type_name)
           if entity_class
-            EntityIntrospector.new(entity_class, stack: @stack, registry: @registry).build_schema
+            GrapeOAS.introspectors.build_schema(entity_class, stack: @stack, registry: @registry)
           else
             schema_type = Constants.primitive_type(type_name) || Constants::SchemaTypes::STRING
             ApiModel::Schema.new(type: schema_type)
@@ -229,7 +229,7 @@ module GrapeOAS
           using_class = resolve_entity_from_opts(exposure, doc)
           return ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT) unless using_class
 
-          child = EntityIntrospector.new(using_class, stack: @stack, registry: @registry).build_schema
+          child = GrapeOAS.introspectors.build_schema(using_class, stack: @stack, registry: @registry)
           merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           child.properties.each do |n, ps|
             merged.add_property(n, ps, required: child.required.include?(n))

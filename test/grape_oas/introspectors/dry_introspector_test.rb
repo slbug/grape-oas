@@ -485,6 +485,105 @@ module GrapeOAS
         assert constraints.nullable
       end
 
+      # Tests for Dry::Schema canonical_name and registry caching
+
+      def test_plain_schema_without_schema_name_has_nil_canonical_name
+        schema = Dry::Schema.JSON do
+          required(:value).filled(:integer)
+        end
+
+        result = processor.build_schema(schema)
+
+        assert_nil result.canonical_name
+        assert_equal "object", result.type
+        assert result.properties.key?("value")
+      end
+
+      def test_schema_with_schema_name_method_uses_it_as_canonical_name
+        # This tests the behavior when schema_name is added via extension (like user's app does)
+        schema = Dry::Schema.JSON do
+          required(:name).filled(:string)
+        end
+
+        # Simulate a schema_name extension by defining the method
+        schema.define_singleton_method(:schema_name) { "MockedSchemaName" }
+
+        result = processor.build_schema(schema)
+
+        assert_equal "MockedSchemaName", result.canonical_name
+        assert_equal "object", result.type
+        assert result.properties.key?("name")
+      end
+
+      def test_schema_with_schema_name_registered_by_name
+        schema = Dry::Schema.JSON do
+          required(:field).filled(:string)
+        end
+        schema.define_singleton_method(:schema_name) { "NamedSchema" }
+
+        registry = {}
+        processor.build_schema(schema, registry: registry)
+
+        assert registry.key?("NamedSchema")
+        assert_equal "string", registry["NamedSchema"].properties["field"].type
+      end
+
+      def test_cached_schema_returned_on_second_build
+        schema = Dry::Schema.JSON do
+          required(:data).filled(:string)
+        end
+        schema.define_singleton_method(:schema_name) { "CachedSchema" }
+
+        registry = {}
+        result1 = processor.build_schema(schema, registry: registry)
+        result2 = processor.build_schema(schema, registry: registry)
+
+        assert_same result1, result2, "Second build should return cached schema"
+      end
+
+      def test_different_schemas_with_different_names_stored_separately
+        schema1 = Dry::Schema.JSON do
+          required(:field1).filled(:string)
+        end
+        schema1.define_singleton_method(:schema_name) { "SchemaOne" }
+
+        schema2 = Dry::Schema.JSON do
+          required(:field2).filled(:integer)
+        end
+        schema2.define_singleton_method(:schema_name) { "SchemaTwo" }
+
+        registry = {}
+        result1 = processor.build_schema(schema1, registry: registry)
+        result2 = processor.build_schema(schema2, registry: registry)
+
+        assert_equal "SchemaOne", result1.canonical_name
+        assert_equal "SchemaTwo", result2.canonical_name
+        assert registry.key?("SchemaOne")
+        assert registry.key?("SchemaTwo")
+        refute_same registry["SchemaOne"], registry["SchemaTwo"]
+      end
+
+      def test_schema_with_schema_name_builds_full_properties
+        schema = Dry::Schema.JSON do
+          required(:id).filled(:integer)
+          required(:name).filled(:string, min_size?: 1)
+          optional(:description).maybe(:string)
+        end
+        schema.define_singleton_method(:schema_name) { "DetailedSchema" }
+
+        result = processor.build_schema(schema)
+
+        assert_equal "DetailedSchema", result.canonical_name
+        assert_equal 3, result.properties.size
+        assert_equal "integer", result.properties["id"].type
+        assert_equal "string", result.properties["name"].type
+        assert_equal 1, result.properties["name"].min_length
+        assert_equal "string", result.properties["description"].type
+        assert_includes result.required, "id"
+        assert_includes result.required, "name"
+        refute_includes result.required, "description"
+      end
+
       private
 
       def constraint_set_class

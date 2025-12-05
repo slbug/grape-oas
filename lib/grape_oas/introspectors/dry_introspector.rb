@@ -60,6 +60,10 @@ module GrapeOAS
       def build
         return unless contract_resolver.contract_schema.respond_to?(:types)
 
+        # Check registry cache first (like EntityIntrospector does)
+        cached = cached_schema
+        return cached if cached
+
         parent_contract = inheritance_handler.find_parent_contract
         return inheritance_handler.build_inherited_schema(parent_contract, type_schema_builder) if parent_contract
 
@@ -67,6 +71,25 @@ module GrapeOAS
       end
 
       private
+
+      # Returns cached schema if it exists and has properties.
+      # Checks by both canonical_name (for Dry::Schema with schema_name)
+      # and contract_class (for Dry::Validation::Contract).
+      #
+      # @return [ApiModel::Schema, nil]
+      def cached_schema
+        # Try canonical_name first (for Dry::Schema objects with schema_name)
+        if contract_resolver.canonical_name
+          cached = @registry[contract_resolver.canonical_name]
+          return cached if cached && !cached.properties.empty?
+        end
+
+        # Fall back to contract_class (for Dry::Validation::Contract)
+        cached = @registry[contract_resolver.contract_class]
+        return cached if cached && !cached.properties.empty?
+
+        nil
+      end
 
       def build_flat_schema
         rule_constraints = DryIntrospectorSupport::ConstraintExtractor.extract(contract_resolver.contract_schema)
@@ -81,7 +104,10 @@ module GrapeOAS
           schema.add_property(name, prop_schema, required: type_schema_builder.required?(dry_type, constraints))
         end
 
-        @registry[contract_resolver.contract_class] = schema
+        # Use canonical_name as registry key for schema objects (they don't have unique classes),
+        # fall back to contract_class for Contract classes
+        registry_key = contract_resolver.canonical_name || contract_resolver.contract_class
+        @registry[registry_key] = schema
         schema
       end
 
