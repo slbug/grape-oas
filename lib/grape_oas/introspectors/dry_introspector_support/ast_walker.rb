@@ -3,20 +3,44 @@
 module GrapeOAS
   module Introspectors
     module DryIntrospectorSupport
-      # Walks Dry::Schema AST nodes and extracts constraints.
+      # Walks Dry::Schema AST nodes and extracts validation constraints.
+      #
+      # Dry::Schema and Dry::Validation use an AST representation for their rules.
+      # This walker traverses the AST and extracts constraints (enum values, min/max,
+      # nullable, etc.) into a ConstraintSet that can be applied to OpenAPI schemas.
+      #
+      # @example Walking a simple AST
+      #   walker = AstWalker.new(ConstraintSet)
+      #   constraints = walker.walk([:predicate, [:type?, [String]]])
+      #
       class AstWalker
+        # AST tags that represent logical/structural nodes vs predicates
         LOGIC_TAGS = %i[predicate rule and or implication not key each].freeze
 
+        # Creates a new AST walker.
+        #
+        # @param constraint_set_class [Class] the class to use for constraint aggregation
         def initialize(constraint_set_class)
           @constraint_set_class = constraint_set_class
         end
 
+        # Walks an AST and extracts all constraints.
+        #
+        # @param ast [Array] the Dry::Schema AST node
+        # @return [ConstraintSet] the extracted constraints
         def walk(ast)
           constraints = constraint_set_class.new(unhandled_predicates: [])
           visit(ast, constraints)
           constraints
         end
 
+        # Intersects multiple constraint branches (for OR logic).
+        #
+        # When handling OR branches, only constraints that apply to ALL branches
+        # should be included in the output. This method computes the intersection.
+        #
+        # @param branches [Array<ConstraintSet>] the branches to intersect
+        # @return [ConstraintSet] the intersected constraints
         def intersect_branches(branches)
           return branches.first if branches.size <= 1
 

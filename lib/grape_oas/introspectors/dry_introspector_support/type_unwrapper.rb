@@ -4,12 +4,25 @@ module GrapeOAS
   module Introspectors
     module DryIntrospectorSupport
       # Unwraps Dry::Types to extract primitives and member types.
+      #
+      # Dry::Types can be deeply nested with wrappers (Constrained, Sum, etc.).
+      # This module provides utilities to unwrap these types and extract the
+      # underlying primitive type and any array member types.
+      #
+      # @example Unwrapping a constrained type
+      #   core = TypeUnwrapper.unwrap(Dry::Types["strict.string"].constrained(max_size: 10))
+      #   # => Returns the base String type
+      #
       module TypeUnwrapper
         # Maximum depth for unwrapping nested Dry::Types (prevents infinite loops)
         MAX_DEPTH = 5
 
         module_function
 
+        # Derives the primitive type and member type from a Dry::Types type.
+        #
+        # @param dry_type [Dry::Types::Type] the type to analyze
+        # @return [Array(Class, Object)] tuple of [primitive_class, member_type_or_nil]
         def derive_primitive_and_member(dry_type)
           core = unwrap(dry_type)
 
@@ -20,6 +33,10 @@ module GrapeOAS
           [primitive, nil]
         end
 
+        # Unwraps a Dry::Types type to get to the core type.
+        #
+        # @param dry_type [Dry::Types::Type] the type to unwrap
+        # @return [Dry::Types::Type] the unwrapped core type
         def unwrap(dry_type)
           current = dry_type
           depth = 0
@@ -35,8 +52,13 @@ module GrapeOAS
           current
         end
 
-        # Detect if type is a meaningful Dry::Types::Sum (union type like TypeA | TypeB)
-        # Returns false for nullable sums (nil | String) which are created by maybe()
+        # Detects if type is a meaningful Dry::Types::Sum (union type like TypeA | TypeB).
+        #
+        # Returns false for nullable sums (nil | String) which are created by maybe(),
+        # as those should be treated as nullable types rather than union types.
+        #
+        # @param dry_type [Dry::Types::Type] the type to check
+        # @return [Boolean] true if it's a meaningful sum type
         def sum_type?(dry_type)
           return false unless defined?(Dry::Types::Sum)
           return false unless dry_type.is_a?(Dry::Types::Sum) || dry_type.class.name&.include?("Sum")
@@ -46,7 +68,10 @@ module GrapeOAS
           schema_sum?(dry_type)
         end
 
-        # Check if Sum type represents a union of schemas (not just nullable)
+        # Checks if Sum type represents a union of schemas (not just nullable).
+        #
+        # @param sum_type [Dry::Types::Sum] the sum type to check
+        # @return [Boolean] true if it's a union of 2+ non-nil schemas
         def schema_sum?(sum_type)
           return false unless sum_type.respond_to?(:left) && sum_type.respond_to?(:right)
 
@@ -59,7 +84,10 @@ module GrapeOAS
           non_nil_types.length >= 2 && non_nil_types.any? { |t| hash_schema?(t) }
         end
 
-        # Check if type is a nil type (from maybe())
+        # Checks if type is a nil type (from maybe()).
+        #
+        # @param dry_type [Dry::Types::Type] the type to check
+        # @return [Boolean] true if it's a NilClass type
         def nil_type?(dry_type)
           return true if dry_type.respond_to?(:primitive) && dry_type.primitive == NilClass
 
@@ -68,7 +96,10 @@ module GrapeOAS
           unwrapped.respond_to?(:primitive) && unwrapped.primitive == NilClass
         end
 
-        # Check if type is a Hash schema (has keys)
+        # Checks if type is a Hash schema (has keys defined).
+        #
+        # @param dry_type [Dry::Types::Type] the type to check
+        # @return [Boolean] true if it's a Hash schema with keys
         def hash_schema?(dry_type)
           return true if dry_type.respond_to?(:keys) && dry_type.keys.any?
 
@@ -76,8 +107,13 @@ module GrapeOAS
           unwrapped.respond_to?(:keys) && unwrapped.keys.any?
         end
 
-        # Recursively extract all types from a Sum type tree
-        # A | B | C becomes Sum(Sum(A, B), C), so we need to traverse the tree
+        # Recursively extracts all types from a Sum type tree.
+        #
+        # A | B | C becomes Sum(Sum(A, B), C), so we need to traverse the tree.
+        #
+        # @param dry_type [Dry::Types::Type] the sum type to extract from
+        # @param types [Array] accumulator array for types (internal use)
+        # @return [Array<Dry::Types::Type>] all leaf types in the sum
         def extract_sum_types(dry_type, types = [])
           if dry_type.respond_to?(:left) && dry_type.respond_to?(:right)
             extract_sum_types(dry_type.left, types)
