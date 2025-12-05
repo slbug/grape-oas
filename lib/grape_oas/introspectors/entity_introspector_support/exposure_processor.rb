@@ -181,31 +181,38 @@ module GrapeOAS
           schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
         end
 
-        # rubocop:disable Lint/DuplicateBranch
         def schema_for_type(type)
           case type
-          when nil
-            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
           when Class
-            if defined?(Grape::Entity) && type <= Grape::Entity
-              EntityIntrospector.new(type, stack: @stack, registry: @registry).build_schema
-            else
-              build_schema_for_primitive(type)
-            end
+            schema_for_class_type(type)
           when String, Symbol
-            entity_class = resolve_entity_from_string(type.to_s)
-            if entity_class
-              EntityIntrospector.new(entity_class, stack: @stack, registry: @registry).build_schema
-            else
-              schema_type = Constants.primitive_type(type) || Constants::SchemaTypes::STRING
-              ApiModel::Schema.new(type: schema_type)
-            end
+            schema_for_string_type(type.to_s)
           else
-            # Default to string for unhandled types (same as nil case - intentional)
-            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+            default_string_schema
           end
         end
-        # rubocop:enable Lint/DuplicateBranch
+
+        def schema_for_class_type(type)
+          if defined?(Grape::Entity) && type <= Grape::Entity
+            EntityIntrospector.new(type, stack: @stack, registry: @registry).build_schema
+          else
+            build_schema_for_primitive(type) || default_string_schema
+          end
+        end
+
+        def schema_for_string_type(type_name)
+          entity_class = resolve_entity_from_string(type_name)
+          if entity_class
+            EntityIntrospector.new(entity_class, stack: @stack, registry: @registry).build_schema
+          else
+            schema_type = Constants.primitive_type(type_name) || Constants::SchemaTypes::STRING
+            ApiModel::Schema.new(type: schema_type)
+          end
+        end
+
+        def default_string_schema
+          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        end
 
         def resolve_entity_from_string(type_name)
           return nil unless defined?(Grape::Entity)

@@ -88,8 +88,9 @@ module GrapeOAS
 
           return schema unless unwrapped.respond_to?(:keys)
 
-          # Dry::Schema keys returns an array of Key objects, not a Hash
-          unwrapped.keys.each do |key| # rubocop:disable Style/HashEachMethods
+          # Dry::Schema keys method returns an array of Key objects, not a Hash
+          schema_keys = unwrapped.keys
+          schema_keys.each do |key|
             key_name = key.respond_to?(:name) ? key.name.to_s : key.to_s
             key_type = key.respond_to?(:type) ? key.type : nil
 

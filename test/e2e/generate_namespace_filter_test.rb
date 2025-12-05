@@ -196,16 +196,14 @@ module GrapeOAS
         desc "Get user" do
           success UserEntity
         end
-        get ":id" do
-        end
+        get(":id") { nil }
       end
 
       namespace :posts do
         desc "Get post" do
           success PostEntity
         end
-        get ":id" do
-        end
+        get(":id") { nil }
       end
     end
 
@@ -215,8 +213,8 @@ module GrapeOAS
       schema_names = schema.dig("components", "schemas")&.keys || []
 
       # Schema names include module path
-      assert schema_names.any? { |n| n.include?("UserEntity") }
-      refute schema_names.any? { |n| n.include?("PostEntity") }
+      assert(schema_names.any? { |n| n.include?("UserEntity") })
+      refute(schema_names.any? { |n| n.include?("PostEntity") })
     end
 
     def test_no_namespace_filter_includes_all_schemas
@@ -225,8 +223,8 @@ module GrapeOAS
       schema_names = schema.dig("components", "schemas")&.keys || []
 
       # Schema names include module path
-      assert schema_names.any? { |n| n.include?("UserEntity") }
-      assert schema_names.any? { |n| n.include?("PostEntity") }
+      assert(schema_names.any? { |n| n.include?("UserEntity") })
+      assert(schema_names.any? { |n| n.include?("PostEntity") })
     end
   end
 end

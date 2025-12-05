@@ -13,7 +13,8 @@ module GrapeOAS
           subject.is_a?(Hash) && subject[:type] == :mock
         end
 
-        def self.build_schema(subject, stack: [], registry: {}) # rubocop:disable Lint/UnusedMethodArgument
+        def self.build_schema(subject, stack: [], registry: {})
+          _ = [stack, registry] # Mark as intentionally unused
           ApiModel::Schema.new(type: "object", description: subject[:desc])
         end
       end
@@ -26,7 +27,7 @@ module GrapeOAS
           subject.is_a?(Hash) && subject[:type] == :another
         end
 
-        def self.build_schema(_subject, stack: [], registry: {}) # rubocop:disable Lint/UnusedMethodArgument
+        def self.build_schema(_subject, _stack: [], _registry: {})
           ApiModel::Schema.new(type: "string")
         end
       end
