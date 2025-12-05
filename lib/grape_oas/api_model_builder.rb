@@ -53,7 +53,7 @@ module GrapeOAS
 
       Array(models).map do |model|
         model = model.constantize if model.is_a?(String)
-        GrapeOAS::Introspectors::EntityIntrospector.new(model).build_schema
+        GrapeOAS.introspectors.build_schema(model, stack: [], registry: {})
       rescue StandardError
         nil
       end.compact
