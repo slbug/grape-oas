@@ -11,7 +11,9 @@ module GrapeOAS
         # Build OAS3-specific operation with nullable_keyword option
         def build_operation(operation)
           nullable_keyword = @options.key?(:nullable_keyword) ? @options[:nullable_keyword] : true
-          Operation.new(operation, @ref_tracker, nullable_keyword: nullable_keyword).build
+          Operation.new(operation, @ref_tracker,
+                        nullable_keyword: nullable_keyword,
+                        suppress_default_error_response: @options[:suppress_default_error_response],).build
         end
       end
     end

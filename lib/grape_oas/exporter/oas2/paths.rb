@@ -10,7 +10,8 @@ module GrapeOAS
 
         # Build OAS2-specific operation
         def build_operation(operation)
-          Operation.new(operation, @ref_tracker).build
+          Operation.new(operation, @ref_tracker,
+                        suppress_default_error_response: @options[:suppress_default_error_response],).build
         end
       end
     end

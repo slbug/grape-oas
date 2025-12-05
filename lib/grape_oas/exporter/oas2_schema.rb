@@ -70,7 +70,8 @@ module GrapeOAS
       end
 
       def build_paths
-        OAS2::Paths.new(@api, @ref_tracker).build
+        OAS2::Paths.new(@api, @ref_tracker,
+                        suppress_default_error_response: @api.suppress_default_error_response,).build
       end
 
       def build_schema_or_ref(schema)

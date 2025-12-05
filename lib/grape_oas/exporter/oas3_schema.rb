@@ -21,7 +21,9 @@ module GrapeOAS
           "info" => build_info,
           "servers" => build_servers,
           "tags" => build_tags,
-          "paths" => OAS3::Paths.new(@api, @ref_tracker, nullable_keyword: nullable_keyword?).build,
+          "paths" => OAS3::Paths.new(@api, @ref_tracker,
+                                     nullable_keyword: nullable_keyword?,
+                                     suppress_default_error_response: @api.suppress_default_error_response,).build,
           "components" => build_components,
           "security" => build_security
         }.compact

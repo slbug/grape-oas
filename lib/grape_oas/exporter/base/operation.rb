@@ -64,7 +64,11 @@ module GrapeOAS
         # Ensure there is at least one 4xx response when any responses exist
         # Can be suppressed per-operation via suppress_default_error_response flag
         def ensure_default_error_response(data)
+          # Check operation-level suppression
           return data if @op.respond_to?(:suppress_default_error_response) && @op.suppress_default_error_response
+
+          # Check global suppression
+          return data if @options[:suppress_default_error_response]
 
           responses = data["responses"]
           return data unless responses && !responses.empty?
