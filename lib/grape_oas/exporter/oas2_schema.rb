@@ -54,13 +54,19 @@ module GrapeOAS
       end
 
       def build_consumes
-        # TODO: Derive from request bodies/media types
-        [Constants::MimeTypes::JSON]
+        media_types = @api.paths.flat_map do |path|
+          path.operations.flat_map { |op| op.consumes || [] }
+        end.uniq
+
+        media_types.empty? ? [Constants::MimeTypes::JSON] : media_types
       end
 
       def build_produces
-        # TODO: Derive from responses/media types
-        [Constants::MimeTypes::JSON]
+        media_types = @api.paths.flat_map do |path|
+          path.operations.flat_map { |op| op.produces || [] }
+        end.uniq
+
+        media_types.empty? ? [Constants::MimeTypes::JSON] : media_types
       end
 
       def build_paths
