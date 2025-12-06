@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    grape-oas (0.1.0)
+    grape-oas (1.0.0)
       grape (>= 3.0)
       zeitwerk
 
