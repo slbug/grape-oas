@@ -32,4 +32,131 @@ namespace :benchmark do
   end
 end
 
+namespace :release do
+  desc "Pre-release actions (update CHANGELOG with version and date)"
+  task :prerelease do
+    require "date"
+
+    version_file = "lib/grape_oas/version.rb"
+    changelog_file = "CHANGELOG.md"
+
+    # Read current version
+    version_content = File.read(version_file)
+    current_version = version_content[/VERSION = "(.+)"/, 1]
+
+    unless current_version
+      abort "Error: Could not parse version from #{version_file}"
+    end
+
+    # Read CHANGELOG
+    changelog_content = File.read(changelog_file)
+
+    # Check if this version already exists in CHANGELOG (idempotent)
+    if changelog_content.match?(/^## \[#{Regexp.escape(current_version)}\]/)
+      puts "✓ CHANGELOG already contains version #{current_version}"
+      puts "\n✓ No changes needed (already prepared for release)"
+      exit 0
+    end
+
+    # Check if Unreleased section exists
+    unless changelog_content.match?(/^## \[Unreleased\]/)
+      abort "Error: No 'Unreleased' section found in #{changelog_file}"
+    end
+
+    # Get today's date
+    today = Date.today.strftime("%Y-%m-%d")
+
+    # Replace Unreleased with version and date
+    new_changelog = changelog_content.gsub(
+      /^## \[Unreleased\]/,
+      "## [#{current_version}] - #{today}"
+    )
+
+    # Remove "Your contribution here" placeholder lines
+    new_changelog.gsub!(/^\s*-?\s*Your contribution here\.?\s*$/i, "")
+
+    File.write(changelog_file, new_changelog)
+
+    puts "Preparing release v#{current_version}"
+    puts "✓ Updated #{changelog_file} (Unreleased → #{current_version})"
+    puts "✓ Set release date to #{today}"
+
+    # Stage and commit
+    system("git add #{changelog_file}")
+
+    # Only commit if there are staged changes
+    if system("git diff --cached --quiet")
+      puts "\n✓ No changes to commit"
+    else
+      if system("git commit -m \"Preparing for release v#{current_version}\"")
+        puts "\n✓ Changes committed successfully"
+        puts "\nNext steps:"
+        puts "  1. Review the commit: git show"
+        puts "  2. Push to remote: git push origin main"
+        puts "  3. Create release: bundle exec rake release"
+      else
+        abort "Error: Failed to commit changes"
+      end
+    end
+  end
+
+  desc "Post-release actions (bump version, ensure Unreleased section)"
+  task :postrelease do
+    version_file = "lib/grape_oas/version.rb"
+    changelog_file = "CHANGELOG.md"
+
+    # Read current version
+    version_content = File.read(version_file)
+    current_version = version_content[/VERSION = "(.+)"/, 1]
+
+    unless current_version
+      abort "Error: Could not parse version from #{version_file}"
+    end
+
+    # Increment patch version
+    major, minor, patch = current_version.split(".").map(&:to_i)
+    new_version = "#{major}.#{minor}.#{patch + 1}"
+
+    puts "Bumping version: #{current_version} → #{new_version}"
+
+    # Update version file
+    new_version_content = version_content.gsub(
+      /VERSION = "#{Regexp.escape(current_version)}"/,
+      %(VERSION = "#{new_version}")
+    )
+    File.write(version_file, new_version_content)
+    puts "✓ Updated #{version_file}"
+
+    # Ensure CHANGELOG has Unreleased section (idempotent)
+    changelog_content = File.read(changelog_file)
+
+    if changelog_content.match?(/^## \[Unreleased\]/)
+      puts "✓ CHANGELOG already has Unreleased section"
+    else
+      # Insert Unreleased section after the header
+      lines = changelog_content.lines
+      header_end_index = lines.index { |line| line.match?(/^## \[\d/) } || 8
+
+      lines.insert(header_end_index, "\n## [Unreleased]\n\n")
+      File.write(changelog_file, lines.join)
+      puts "✓ Added Unreleased section to #{changelog_file}"
+    end
+
+    # Stage and commit changes
+    system("git add #{version_file} #{changelog_file}")
+
+    # Only commit if there are staged changes
+    if system("git diff --cached --quiet")
+      puts "\n✓ No changes to commit (already prepared)"
+    else
+      if system('git commit -m "Prepare for next development iteration"')
+        puts "\n✓ Changes committed successfully"
+        puts "\nReminder: Push to remote with: git push origin main"
+      else
+        abort "Error: Failed to commit changes"
+      end
+    end
+  end
+end
+
 task default: %i[test rubocop]
