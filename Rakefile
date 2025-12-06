@@ -44,9 +44,7 @@ namespace :release do
     version_content = File.read(version_file)
     current_version = version_content[/VERSION = "(.+)"/, 1]
 
-    unless current_version
-      abort "Error: Could not parse version from #{version_file}"
-    end
+    abort "Error: Could not parse version from #{version_file}" unless current_version
 
     # Read CHANGELOG
     changelog_content = File.read(changelog_file)
@@ -59,9 +57,7 @@ namespace :release do
     end
 
     # Check if Unreleased section exists
-    unless changelog_content.match?(/^## \[Unreleased\]/)
-      abort "Error: No 'Unreleased' section found in #{changelog_file}"
-    end
+    abort "Error: No 'Unreleased' section found in #{changelog_file}" unless changelog_content.match?(/^## \[Unreleased\]/)
 
     # Get today's date
     today = Date.today.strftime("%Y-%m-%d")
@@ -69,7 +65,7 @@ namespace :release do
     # Replace Unreleased with version and date
     new_changelog = changelog_content.gsub(
       /^## \[Unreleased\]/,
-      "## [#{current_version}] - #{today}"
+      "## [#{current_version}] - #{today}",
     )
 
     # Remove "Your contribution here" placeholder lines
@@ -87,16 +83,14 @@ namespace :release do
     # Only commit if there are staged changes
     if system("git diff --cached --quiet")
       puts "\n✓ No changes to commit"
+    elsif system("git commit -m \"Preparing for release v#{current_version}\"")
+      puts "\n✓ Changes committed successfully"
+      puts "\nNext steps:"
+      puts "  1. Review the commit: git show"
+      puts "  2. Push to remote: git push origin main"
+      puts "  3. Create release: bundle exec rake release"
     else
-      if system("git commit -m \"Preparing for release v#{current_version}\"")
-        puts "\n✓ Changes committed successfully"
-        puts "\nNext steps:"
-        puts "  1. Review the commit: git show"
-        puts "  2. Push to remote: git push origin main"
-        puts "  3. Create release: bundle exec rake release"
-      else
-        abort "Error: Failed to commit changes"
-      end
+      abort "Error: Failed to commit changes"
     end
   end
 
@@ -109,9 +103,7 @@ namespace :release do
     version_content = File.read(version_file)
     current_version = version_content[/VERSION = "(.+)"/, 1]
 
-    unless current_version
-      abort "Error: Could not parse version from #{version_file}"
-    end
+    abort "Error: Could not parse version from #{version_file}" unless current_version
 
     # Increment patch version
     major, minor, patch = current_version.split(".").map(&:to_i)
@@ -122,7 +114,7 @@ namespace :release do
     # Update version file
     new_version_content = version_content.gsub(
       /VERSION = "#{Regexp.escape(current_version)}"/,
-      %(VERSION = "#{new_version}")
+      %(VERSION = "#{new_version}"),
     )
     File.write(version_file, new_version_content)
     puts "✓ Updated #{version_file}"
@@ -148,13 +140,11 @@ namespace :release do
     # Only commit if there are staged changes
     if system("git diff --cached --quiet")
       puts "\n✓ No changes to commit (already prepared)"
+    elsif system('git commit -m "Prepare for next development iteration"')
+      puts "\n✓ Changes committed successfully"
+      puts "\nReminder: Push to remote with: git push origin main"
     else
-      if system('git commit -m "Prepare for next development iteration"')
-        puts "\n✓ Changes committed successfully"
-        puts "\nReminder: Push to remote with: git push origin main"
-      else
-        abort "Error: Failed to commit changes"
-      end
+      abort "Error: Failed to commit changes"
     end
   end
 end

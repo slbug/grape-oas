@@ -63,6 +63,7 @@ Metrics/BlockLength:
   Max: 60
   Exclude:
     - test/**/*
+    - Rakefile
 
 Metrics/ParameterLists:
   Max: 13
