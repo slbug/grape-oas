@@ -19,20 +19,28 @@ module GrapeOAS
         end
 
         # Checks if a parameter should be in the request body.
+        # Supports both `param_type: 'body'` and `in: 'body'` for grape-swagger compatibility.
         #
         # @param spec [Hash] the parameter specification
         # @return [Boolean] true if it's a body parameter
         def self.body_param?(spec)
-          spec.dig(:documentation, :param_type) == "body" || [Hash, "Hash"].include?(spec[:type])
+          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
+          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
+
+          param_type == "body" || in_location == "body" || [Hash, "Hash"].include?(spec[:type])
         end
 
         # Checks if a parameter is explicitly marked as NOT a body param.
+        # Supports both `param_type` and `in` for grape-swagger compatibility.
         #
         # @param spec [Hash] the parameter specification
         # @return [Boolean] true if explicitly non-body
         def self.explicit_non_body_param?(spec)
           param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          param_type && %w[query header path].include?(param_type)
+          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
+          location = param_type || in_location
+
+          location && %w[query header path].include?(location)
         end
 
         # Checks if a parameter should be hidden from documentation.
@@ -51,11 +59,29 @@ module GrapeOAS
         class << self
           private
 
+          # Extracts the parameter location from the specification.
+          # Supports both `param_type` and `in` options for grape-swagger compatibility.
+          #
+          # Precedence (highest to lowest):
+          #   1. `param_type` option (e.g., `documentation: { param_type: 'query' }`)
+          #   2. `in` option (e.g., `documentation: { in: 'query' }`)
+          #   3. Falls back to "query" if neither is specified
+          #
+          # Note: If both `param_type` and `in` are specified, `param_type` takes precedence.
+          # For example, `{ param_type: 'query', in: 'body' }` will be treated as query.
+          #
+          # @param spec [Hash] the parameter specification
+          # @param route [Object] the Grape route object
+          # @return [String] the parameter location
           def extract_from_spec(spec, route)
             # If body_name is set on the route, treat non-path params as body by default
-            return "body" if route.options[:body_name] && !spec.dig(:documentation, :param_type)
+            param_type = spec.dig(:documentation, :param_type)
+            in_location = spec.dig(:documentation, :in)
+            return "body" if route.options[:body_name] && !param_type && !in_location
 
-            spec.dig(:documentation, :param_type)&.downcase || "query"
+            # Support both param_type and in for grape-swagger compatibility
+            # param_type takes precedence over in when both are specified
+            (param_type || in_location)&.to_s&.downcase || "query"
           end
         end
       end
