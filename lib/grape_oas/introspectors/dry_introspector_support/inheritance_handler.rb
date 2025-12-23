@@ -68,15 +68,27 @@ module GrapeOAS
         def build_child_only_schema(parent_contract, type_schema_builder)
           child_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           parent_keys = parent_contract_types(parent_contract)
-          rule_constraints = ConstraintExtractor.extract(@contract_resolver.contract_schema)
+          contract_schema = @contract_resolver.contract_schema
 
-          @contract_resolver.contract_schema.types.each do |name, dry_type|
+          constraints_by_path, required_by_object_path =
+            RuleIndex.build(contract_schema)
+
+          type_schema_builder.configure_path_aware_mode(constraints_by_path, required_by_object_path)
+          root_required = required_by_object_path.fetch("", [])
+
+          contract_schema.types.each do |name, dry_type|
             # Skip inherited properties
             next if parent_keys.include?(name.to_s)
 
-            constraints = rule_constraints[name]
-            prop_schema = type_schema_builder.build_schema_for_type(dry_type, constraints)
-            child_schema.add_property(name, prop_schema, required: type_schema_builder.required?(dry_type, constraints))
+            name_s = name.to_s
+            prop_schema = nil
+
+            type_schema_builder.with_path(name_s) do
+              prop_schema = type_schema_builder.build_schema_for_type(dry_type,
+                                                                      type_schema_builder.constraints_for_current_path,)
+            end
+
+            child_schema.add_property(name, prop_schema, required: root_required.include?(name_s))
           end
 
           child_schema
