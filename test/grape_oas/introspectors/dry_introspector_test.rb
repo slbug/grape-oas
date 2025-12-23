@@ -54,6 +54,29 @@ module GrapeOAS
         assert_equal "string", each_tags.items.type
       end
 
+      def test_inherited_child_nested_constraints
+        parent_contract = Class.new(Dry::Validation::Contract) do
+          params { required(:id).filled(:integer) }
+        end
+
+        child_contract = Class.new(parent_contract) do
+          params do
+            required(:items).value(:array, size?: (2..8)).each(:hash) do
+              required(:code).filled(:string, min_size?: 3, max_size?: 5)
+            end
+          end
+        end
+
+        schema = processor.build(child_contract).all_of.last
+        items_array = schema.properties["items"]
+        code = items_array.items.properties["code"]
+
+        assert_equal 3, code.min_length
+        assert_equal 5, code.max_length
+        assert_equal 2, items_array.min_items
+        assert_equal 8, items_array.max_items
+      end
+
       def test_nested_array_constraints_no_bleeding
         contract = Dry::Schema.Params do
           optional(:deliveries).value(:array, max_size?: 2).each(:hash) do
