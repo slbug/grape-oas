@@ -286,6 +286,199 @@ module GrapeOAS
         assert_includes schema.properties.keys, "profile"
       end
 
+      def test_multiple_present_response_with_one_of
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get user or profile",
+               success: {
+                 one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity },
+                   { model: ResponseEdgeCasesTest::ProfileEntity }
+                 ]
+               }
+          get "users/:id/flexible" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        assert_equal 1, responses.size
+        response = responses.first
+
+        assert_equal "200", response.http_status
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::UserEntity", schema.one_of[0].canonical_name
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::ProfileEntity", schema.one_of[1].canonical_name
+      end
+
+      def test_multiple_present_response_with_one_of_array_syntax
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get user or profile",
+               success: [
+                 {
+                   one_of: [
+                     { model: ResponseEdgeCasesTest::UserEntity },
+                     { model: ResponseEdgeCasesTest::ProfileEntity }
+                   ]
+                 }
+               ]
+          get "users/:id/flexible2" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        assert_equal 1, responses.size
+        response = responses.first
+
+        assert_equal "200", response.http_status
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+      end
+
+      def test_one_of_with_mixed_as_keys
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Mixed oneOf with as",
+               success: [{
+                 one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity, as: "Model1" },
+                   { model: ResponseEdgeCasesTest::ProfileEntity }
+                 ]
+               }]
+          get "test1" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+      end
+
+      def test_one_of_with_all_as_keys
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "OneOf all with as",
+               success: [{
+                 one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity, as: "Model1" },
+                   { model: ResponseEdgeCasesTest::ProfileEntity, as: "Model2" }
+                 ]
+               }]
+          get "test2" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+      end
+
+      def test_one_of_mixed_with_regular_as
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "OneOf mixed with regular as",
+               success: [
+                 { one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity },
+                   { model: ResponseEdgeCasesTest::ProfileEntity }
+                 ] },
+                 { model: ResponseEdgeCasesTest::ItemEntity, as: "Model3" }
+               ]
+          get "test3" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_includes schema.properties.keys, "Model3"
+      end
+
+      def test_multiple_one_of_blocks
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Multiple oneOf blocks",
+               success: [
+                 { one_of: [{ model: ResponseEdgeCasesTest::UserEntity }] },
+                 { one_of: [{ model: ResponseEdgeCasesTest::ProfileEntity }] }
+               ]
+          get "test4" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+      end
+
+      def test_one_of_with_is_array
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "OneOf with arrays",
+               success: [{
+                 one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity, is_array: true },
+                   { model: ResponseEdgeCasesTest::ProfileEntity }
+                 ]
+               }]
+          get "test5" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 2, schema.one_of.size
+        assert_equal "array", schema.one_of[0].type
+        assert_equal "object", schema.one_of[1].type
+      end
+
       def test_multiple_present_response_with_is_array
         api_class = Class.new(Grape::API) do
           format :json

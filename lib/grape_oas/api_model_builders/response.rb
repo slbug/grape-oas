@@ -62,12 +62,62 @@ module GrapeOAS
 
       # Builds a response from a group of specs with the same status code
       # If multiple specs have `as:` keys, they are merged into a single object schema
+      # If any spec has `one_of:` key, they are merged into a oneOf schema
+      # If mixed oneOf and as: keys, falls back to merged object behavior
       def build_response_from_group(group_specs)
-        if group_specs.any? { |s| s[:as] }
+        has_one_of = group_specs.any? { |s| s[:one_of] }
+        has_as = group_specs.any? { |s| s[:as] }
+
+        if has_one_of && !has_as
+          build_one_of_response(group_specs)
+        elsif has_as
           build_merged_response(group_specs)
         else
           build_response_from_spec(group_specs.first)
         end
+      end
+
+      # Builds a oneOf response for multiple possible response schemas
+      def build_one_of_response(specs)
+        first_spec = specs.first
+
+        all_schemas = []
+        specs.each do |spec|
+          if spec[:one_of]
+            spec[:one_of].each do |one_of_spec|
+              entity_schema = build_schema(one_of_spec[:model] || one_of_spec[:entity])
+
+              if one_of_spec[:is_array]
+                entity_schema = GrapeOAS::ApiModel::Schema.new(
+                  type: Constants::SchemaTypes::ARRAY,
+                  items: entity_schema,
+                )
+              end
+
+              all_schemas << entity_schema
+            end
+          else
+            # Handle regular specs mixed with oneOf specs
+            entity_schema = build_schema(spec[:entity])
+            all_schemas << entity_schema if entity_schema
+          end
+        end
+
+        schema = GrapeOAS::ApiModel::Schema.new(one_of: all_schemas)
+        media_types = Array(response_content_types).map do |mime|
+          build_media_type(mime_type: mime, schema: schema)
+        end
+
+        description = first_spec[:message].is_a?(String) ? first_spec[:message] : first_spec[:message].to_s
+
+        GrapeOAS::ApiModel::Response.new(
+          http_status: first_spec[:code].to_s,
+          description: description || "Success",
+          media_types: media_types,
+          headers: normalize_headers(first_spec[:headers]) || headers_from_route,
+          extensions: first_spec[:extensions] || extensions_from_route,
+          examples: merge_examples(specs),
+        )
       end
 
       # Builds a merged response for multiple present with `as:` keys
