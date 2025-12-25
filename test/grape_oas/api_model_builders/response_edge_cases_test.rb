@@ -503,6 +503,36 @@ module GrapeOAS
         assert_includes error.message, "one_of items must include :model or :entity"
       end
 
+      def test_one_of_mixed_with_regular_spec
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "OneOf mixed with regular spec",
+               success: [
+                 { one_of: [
+                   { model: ResponseEdgeCasesTest::UserEntity },
+                   { model: ResponseEdgeCasesTest::ProfileEntity }
+                 ] },
+                 { model: ResponseEdgeCasesTest::ItemEntity }
+               ]
+          get "test-mixed-oneof-regular" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        response = responses.first
+        schema = response.media_types.first.schema
+
+        assert_nil schema.type
+        assert_equal 3, schema.one_of.size
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::UserEntity", schema.one_of[0].canonical_name
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::ProfileEntity", schema.one_of[1].canonical_name
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::ItemEntity", schema.one_of[2].canonical_name
+      end
+
       def test_multiple_present_response_with_is_array
         api_class = Class.new(Grape::API) do
           format :json

@@ -88,10 +88,11 @@ desc 'Get user or profile' do
 end
 ```
 
-Note: `one_of` is a grape-oas extension and is not part of the upstream Grape DSL.
-Note: If you mix `one_of` with regular `as:` response specs, `one_of` is ignored.
-Note: `:as` is ignored within `one_of` items.
-Note: `one_of` items must include `:model` or `:entity`.
+**Notes:**
+- `one_of` is a grape-oas extension and is not part of the upstream Grape DSL.
+- If you mix `one_of` with regular `as:` response specs, `one_of` is ignored.
+- `:as` is ignored within `one_of` items.
+- `one_of` items must include `:model` or `:entity`.
 
 ### Basic Responses
 

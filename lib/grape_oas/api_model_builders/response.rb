@@ -105,7 +105,8 @@ module GrapeOAS
           build_media_type(mime_type: mime, schema: schema)
         end
 
-        description = first_spec[:message].is_a?(String) ? first_spec[:message] : first_spec[:message].to_s
+        message = first_spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
           http_status: first_spec[:code].to_s,
@@ -125,7 +126,8 @@ module GrapeOAS
           build_media_type(mime_type: mime, schema: schema)
         end
 
-        description = first_spec[:message].is_a?(String) ? first_spec[:message] : first_spec[:message].to_s
+        message = first_spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
           http_status: first_spec[:code].to_s,
@@ -183,7 +185,8 @@ module GrapeOAS
           )
         end
 
-        description = spec[:message].is_a?(String) ? spec[:message] : spec[:message].to_s
+        message = spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
           http_status: spec[:code].to_s,
