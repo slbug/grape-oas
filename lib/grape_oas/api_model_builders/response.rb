@@ -61,17 +61,17 @@ module GrapeOAS
       end
 
       # Builds a response from a group of specs with the same status code
-      # If multiple specs have `as:` keys, they are merged into a single object schema
-      # If any spec has `one_of:` key, they are merged into a oneOf schema
-      # If mixed oneOf and as: keys, falls back to merged object behavior
+      # If any spec has `as:`, build a merged object response using only `as:` entries
+      # Else if any spec has `one_of:`, build a oneOf response from one_of entries and
+      # any regular specs in the group (this branch only runs when no `as:` entries exist)
       def build_response_from_group(group_specs)
-        has_one_of = group_specs.any? { |s| s[:one_of] }
-        has_as = group_specs.any? { |s| s[:as] }
+        has_one_of = group_specs.any? { |s| s[:one_of] && !s[:one_of].empty? }
+        has_as = group_specs.any? { |s| !s[:as].nil? }
 
-        if has_one_of && !has_as
+        if has_as
+          build_merged_response(group_specs.select { |s| s[:as] })
+        elsif has_one_of
           build_one_of_response(group_specs)
-        elsif has_as
-          build_merged_response(group_specs)
         else
           build_response_from_spec(group_specs.first)
         end

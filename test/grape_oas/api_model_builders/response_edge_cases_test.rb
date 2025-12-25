@@ -360,7 +360,7 @@ module GrapeOAS
                    { model: ResponseEdgeCasesTest::ProfileEntity }
                  ]
                }]
-          get "test1" do
+          get "oneof-mixed-as" do
             {}
           end
         end
@@ -386,7 +386,7 @@ module GrapeOAS
                    { model: ResponseEdgeCasesTest::ProfileEntity, as: "Model2" }
                  ]
                }]
-          get "test2" do
+          get "oneof-all-as" do
             {}
           end
         end
@@ -413,7 +413,7 @@ module GrapeOAS
                  ] },
                  { model: ResponseEdgeCasesTest::ItemEntity, as: "Model3" }
                ]
-          get "test3" do
+          get "oneof-mixed-regular-as" do
             {}
           end
         end
@@ -438,7 +438,7 @@ module GrapeOAS
                  { one_of: [{ model: ResponseEdgeCasesTest::UserEntity }] },
                  { one_of: [{ model: ResponseEdgeCasesTest::ProfileEntity }] }
                ]
-          get "test4" do
+          get "oneof-multiple-blocks" do
             {}
           end
         end
@@ -464,7 +464,7 @@ module GrapeOAS
                    { model: ResponseEdgeCasesTest::ProfileEntity }
                  ]
                }]
-          get "test5" do
+          get "oneof-with-arrays" do
             {}
           end
         end
