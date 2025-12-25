@@ -85,21 +85,18 @@ module GrapeOAS
         specs.each do |spec|
           if spec[:one_of]
             spec[:one_of].each do |one_of_spec|
-              entity_schema = build_schema(one_of_spec[:model] || one_of_spec[:entity])
+              one_of_entity = one_of_spec.is_a?(Hash) ? (one_of_spec[:model] || one_of_spec[:entity]) : nil
+              raise ArgumentError, "one_of items must include :model or :entity" unless one_of_entity
 
-              if one_of_spec[:is_array]
-                entity_schema = GrapeOAS::ApiModel::Schema.new(
-                  type: Constants::SchemaTypes::ARRAY,
-                  items: entity_schema,
-                )
-              end
-
-              all_schemas << entity_schema
+              is_array = one_of_spec.key?(:is_array) ? one_of_spec[:is_array] : spec[:is_array]
+              schema = build_schema(one_of_entity)
+              schema = array_schema(schema) if is_array
+              all_schemas << schema if schema
             end
           else
-            # Handle regular specs mixed with oneOf specs
-            entity_schema = build_schema(spec[:entity])
-            all_schemas << entity_schema if entity_schema
+            schema = build_schema(spec[:entity])
+            schema = array_schema(schema) if spec[:is_array]
+            all_schemas << schema if schema
           end
         end
 
@@ -195,6 +192,13 @@ module GrapeOAS
           headers: normalize_headers(spec[:headers]) || headers_from_route,
           extensions: spec[:extensions] || extensions_from_route,
           examples: spec[:examples],
+        )
+      end
+
+      def array_schema(schema)
+        GrapeOAS::ApiModel::Schema.new(
+          type: Constants::SchemaTypes::ARRAY,
+          items: schema,
         )
       end
 
