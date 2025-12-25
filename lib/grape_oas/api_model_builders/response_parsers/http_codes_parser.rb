@@ -10,8 +10,9 @@ module GrapeOAS
 
         def applicable?(route)
           # Check route.options (current behavior)
+          entity_hash = route.options[:entity].is_a?(Hash) ? route.options[:entity] : nil
           options_applicable = route.options[:http_codes] || route.options[:failure] || route.options[:success] ||
-                               (route.options[:entity].is_a?(Hash) && (route.options[:entity][:code] || route.options[:entity][:model]))
+                               (entity_hash && (entity_hash[:code] || entity_hash[:model] || entity_hash[:entity] || entity_hash[:one_of]))
 
           # Check route.settings[:description] (desc block behavior)
           desc_data = route.settings&.dig(:description)
@@ -94,6 +95,7 @@ module GrapeOAS
               headers: entity_value[:headers],
               examples: entity_value[:examples],
               as: entity_value[:as],
+              one_of: entity_value[:one_of],
               is_array: entity_value[:is_array] || route.options[:is_array],
               required: entity_value[:required]
             }
