@@ -169,6 +169,28 @@ class DescBlockComprehensiveTest < Minitest::Test
     assert_includes schema_ref(responses["400"]), "ErrorEntity"
   end
 
+  def test_success_one_of_in_desc_block
+    spec = build_spec do
+      desc "Test" do
+        success({
+                  one_of: [
+                    { model: TestEntity },
+                    { model: ErrorEntity }
+                  ]
+                })
+      end
+      get { nil }
+    end
+    response_200 = response_for(spec)
+
+    assert response_200
+    one_of = one_of_refs(response_200)
+
+    assert_equal 2, one_of.size
+    assert(one_of.any? { |ref| ref.include?("TestEntity") })
+    assert(one_of.any? { |ref| ref.include?("ErrorEntity") })
+  end
+
   private
 
   def build_spec(&block)
@@ -195,5 +217,11 @@ class DescBlockComprehensiveTest < Minitest::Test
 
   def schema_ref(response)
     response.dig("content", "application/json", "schema", "$ref")
+  end
+
+  def one_of_refs(response)
+    Array(response.dig("content", "application/json", "schema", "oneOf")).map do |entry|
+      entry["$ref"]
+    end
   end
 end
