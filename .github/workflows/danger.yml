@@ -1,0 +1,12 @@
+name: Danger
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+jobs:
+  danger:
+    uses: numbata/danger-pr-comment/.github/workflows/danger-run.yml@main
+    secrets: inherit
+    with:
+      ruby-version: "4.0"
+      danger-args: "dry_run --base=${{ github.event.pull_request.base.sha }} --head=${{ github.event.pull_request.head.sha }}"
