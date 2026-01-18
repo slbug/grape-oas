@@ -132,6 +132,10 @@ module GrapeOAS
       end
 
       def build_parameter(name, location, required, schema, spec)
+        doc = spec[:documentation] || {}
+        style = doc.fetch(:style) { doc["style"] }
+        explode = doc.fetch(:explode) { doc["explode"] }
+
         ApiModel::Parameter.new(
           location: location,
           name: name,
@@ -139,6 +143,8 @@ module GrapeOAS
           schema: schema,
           description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),
+          style: style,
+          explode: explode,
         )
       end
 
