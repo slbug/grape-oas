@@ -36,7 +36,10 @@ module GrapeOAS
           entity_value = route.options[:entity]
           return specs unless entity_value
 
-          return append_entity_spec(specs, entity_value, route) if specs.empty? || desc_block?(route)
+          # Append entity from options unless desc block has explicit :success definition
+          # that should take precedence (stored via `success({ code: X, model: Y })` syntax)
+          should_append = (specs.empty? || desc_block?(route)) && !desc_block_has_explicit_success?(route)
+          return append_entity_spec(specs, entity_value, route) if should_append
 
           specs
         end
@@ -76,6 +79,11 @@ module GrapeOAS
           desc_data = route.settings&.dig(:description)
           desc_data.is_a?(Hash) &&
             (desc_data[:success] || desc_data[:failure] || desc_data[:http_codes] || desc_data[:entity])
+        end
+
+        def desc_block_has_explicit_success?(route)
+          desc_data = route.settings&.dig(:description)
+          desc_data.is_a?(Hash) && desc_data[:success]
         end
 
         def append_entity_spec(specs, entity_value, route)
@@ -120,6 +128,9 @@ module GrapeOAS
             normalize_hash_entry(entry, route)
           when Array
             normalize_array_entry(entry, route)
+          when Class, Module
+            # Plain entity class (e.g., success TestEntity)
+            normalize_entity_entry(entry, route)
           else
             normalize_plain_entry(entry, route)
           end
@@ -150,6 +161,17 @@ module GrapeOAS
             entity: entity || route.options[:entity],
             headers: nil,
             examples: examples
+          }
+        end
+
+        def normalize_entity_entry(entity_class, route)
+          # Plain entity class (e.g., success TestEntity)
+          {
+            code: route.options[:default_status] || 200,
+            message: nil,
+            entity: entity_class,
+            headers: nil,
+            is_array: route.options[:is_array]
           }
         end
 

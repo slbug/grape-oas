@@ -90,6 +90,22 @@ module GrapeOAS
           assert_equal "OptionsEntity", specs.first[:entity]
         end
 
+        def test_desc_block_takes_precedence_over_plain_entity_option
+          # When route.options has only :entity (no http_codes/success/failure)
+          # and desc block has response definitions, desc block should win
+          route = mock_route(
+            options: { entity: "OptionsEntity" },
+            settings: { description: { success: { code: 201, model: "DescEntity", message: "Created" } } },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 201, specs.first[:code]
+          assert_equal "DescEntity", specs.first[:entity]
+          assert_equal "Created", specs.first[:message]
+        end
+
         private
 
         def mock_route_with_desc_block(desc_data)
