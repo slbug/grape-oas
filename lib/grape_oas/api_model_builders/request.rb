@@ -318,7 +318,7 @@ module GrapeOAS
           name_s = name.to_s
           next if path_params.include?(name_s)
 
-          required = schema.required&.include?(name_s) || false
+          required = schema.required&.any? { |r| r.to_s == name_s } || false
           doc = param_docs[name_s] || {}
           params << build_query_parameter(name_s, prop_schema, required, doc)
         end
