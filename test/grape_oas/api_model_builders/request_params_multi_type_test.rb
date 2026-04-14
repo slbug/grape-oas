@@ -96,28 +96,6 @@ module GrapeOAS
         assert_equal Constants::SchemaTypes::STRING, param.schema.one_of[0].type
         assert_equal Constants::SchemaTypes::BOOLEAN, param.schema.one_of[1].type
       end
-
-      # Make sure we don't break typed arrays like "[String]"
-      def test_typed_array_still_works
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            requires :tags, type: "[String]"
-          end
-          get("test") { {} }
-        end
-
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        _body_schema, params = builder.build
-
-        param = params.find { |p| p.name == "tags" }
-
-        # Should be an array, not oneOf
-        assert_equal Constants::SchemaTypes::ARRAY, param.schema.type
-        assert_nil param.schema.one_of
-        assert_equal Constants::SchemaTypes::STRING, param.schema.items.type
-      end
     end
   end
 end

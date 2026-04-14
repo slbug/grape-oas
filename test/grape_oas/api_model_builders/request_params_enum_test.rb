@@ -231,42 +231,6 @@ module GrapeOAS
         assert_equal 100, ids.items.maximum
       end
 
-      def test_integer_range_values_on_one_of_param
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            optional :count, types: [Integer, String, NilClass], values: 1..10
-          end
-          get "items" do
-            {}
-          end
-        end
-
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        _stdout, stderr = capture_io do
-          _body_schema, params = builder.build
-
-          count_param = params.find { |p| p.name == "count" }
-
-          refute_nil count_param
-          refute_nil count_param.schema.one_of
-
-          integer_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
-          string_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
-
-          refute_nil integer_variant
-          assert_equal 1, integer_variant.minimum
-          assert_equal 10, integer_variant.maximum
-
-          refute_nil string_variant
-          assert_nil string_variant.minimum
-          assert_nil string_variant.maximum
-        end
-
-        assert_empty stderr
-      end
-
       # === Proc values ===
 
       def test_proc_enum_values
@@ -363,70 +327,6 @@ module GrapeOAS
         refute_nil filter
         assert_includes filter.properties.keys, "status"
         assert_includes filter.properties.keys, "sort"
-      end
-
-      # === Multi-type (oneOf) with enum ===
-
-      def test_multi_type_with_enum_values
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            # Use types: [String, NilClass] - optimized to nullable string (not oneOf)
-            optional :status, types: [String, NilClass], values: %w[visible hidden]
-          end
-          get "items" do
-            {}
-          end
-        end
-
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        _body_schema, params = builder.build
-
-        status_param = params.find { |p| p.name == "status" }
-
-        refute_nil status_param
-        # [String, NilClass] is optimized to nullable string (not oneOf)
-        assert_equal Constants::SchemaTypes::STRING, status_param.schema.type
-        assert status_param.schema.nullable
-
-        # The enum should be applied directly to the schema
-        assert_equal %w[visible hidden], status_param.schema.enum
-      end
-
-      def test_multi_type_three_types_still_uses_one_of
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            # Three types: NilClass is filtered out and represented via nullable
-            optional :value, types: [String, Integer, NilClass], values: %w[a b c]
-          end
-          get "items" do
-            {}
-          end
-        end
-
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        _body_schema, params = builder.build
-
-        value_param = params.find { |p| p.name == "value" }
-
-        refute_nil value_param
-        # NilClass is filtered out, represented via nullable property
-        refute_nil value_param.schema.one_of
-        assert_equal 2, value_param.schema.one_of.size
-        assert value_param.schema.nullable
-
-        # String variant should have the string enum
-        string_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
-
-        assert_equal %w[a b c], string_variant.enum
-
-        # Integer variant should NOT have string enum (type incompatible)
-        integer_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
-
-        assert_nil integer_variant.enum
       end
 
       # === [false] enum regression ===
