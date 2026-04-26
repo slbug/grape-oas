@@ -164,6 +164,7 @@ module GrapeOAS
         def normalize_enum(enum_vals, type)
           return nil unless enum_vals.is_a?(Array)
 
+          # rubocop:disable Performance/MapCompact -- filter_map drops `false` for boolean enums
           coerced = enum_vals.map do |v|
             case type
             when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
@@ -171,6 +172,7 @@ module GrapeOAS
             else v
             end
           end.compact
+          # rubocop:enable Performance/MapCompact
 
           coerced.uniq
         end
